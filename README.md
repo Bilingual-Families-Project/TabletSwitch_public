@@ -6,7 +6,7 @@ Bilingual Families Project's online study: Word learning task.
 ## experiment_demo
 Demo of the experiment testing English-French word-learning performance in the _"English first, one-language-at-a-time first"_ condition.
 
-[Click here to view the demo](XXXXXX) 
+[Click here to view the demo](https://rachelkytsui.github.io/demo_Bilingual-Families-Project_TabletSwitch/) 
 
 (Note that your browser window will go to fullscreen. Click Esc if you would like to leave fullscreen mode).
 
