@@ -23,6 +23,9 @@ Repository for the four different test orders (4 orders per site, so there are 8
   - fr_ol: _"Spanish first, one-language-at-a-time first"_ condition
   - fr_it: _"Spanish first, immediate-translation first"_ condition
 
+## praat_script
+Repository containing the **manual** and **praat scripts** used to generate the audio stimuli for the experiment.
+
 ## stimuli_audio
 Repository containing the audio stimuli used in the experiment.
 * English_French: The audio stimuli used in the English-French versions.
