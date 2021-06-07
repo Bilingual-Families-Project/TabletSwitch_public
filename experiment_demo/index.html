@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Word Learning</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta charset='utf-8'>
+        <script type="text/javascript" src="jspsych-6.3.0/jspsych.js"></script>
+        <link rel="stylesheet" type="text/css" href="jspsych-6.3.0/css/jspsych.css"/>
+        <script src= "jspsych-6.3.0/plugins/jspsych-survey-text.js"></script>
+        <script src= "jspsych-6.3.0/plugins/jspsych-html-keyboard-response.js"></script>
+        <script src= "jspsych-6.3.0/plugins/jspsych-html-button-response.js"></script>
+        <script src= "jspsych-6.3.0/plugins/jspsych-image-button-response.js"></script>
+        <script src= "jspsych-6.3.0/plugins/jspsych-audio-button-response.js"></script>
+        <script src= "jspsych-6.3.0/plugins/jspsych-video-keyboard-response.js"></script>
+        <script src= "jspsych-6.3.0/plugins/jspsych-audio-button-response.js"></script>
+        <script src= "jspsych-6.3.0/plugins/jspsych-audio-keyboard-response.js"></script>
+        <script src= "jspsych-6.3.0/plugins/jspsych-fullscreen.js"></script>
+        <script src="jspsych-6.3.0/plugins/jspsych-preload.js"></script>
+        <script src= "lib/vendors/jquery-2.2.0.min.js"></script>
+        <script src= "lib/jspsych-pavlovia-3.2.5.js"></script>
+        <style type="text/css">
+            *:not(input):not(textarea) {
+                -webkit-touch-callout: none; /* disable the iOS (safari) popup when long-press on a link */
+                -webkit-user-select: none; /* Webkit: disable selecting the content of an element */
+                -moz-user-select: none;      /* Firefox */
+                -ms-user-select: none;       /* Edge*/
+                user-select: none;       /* Future-proof*/
+                -webkit-user-drag: none; /* Webkit: disable items being draggable (should work for ipads)*/
+                -webkit-touch-action: manipulation; /* Disable double tap to zoom */
+                -ms-touch-action: manipulation; /* Disable double tap to zoom */
+                touch-action: manipulation; /* Disable double tap to zoom */
+            }     
+        </style>
+        <style>
+            .jspsych-display-element {
+                font-size: x-large;
+            }
+            .jspsych-btn {
+                font-size: 45px;
+                padding: 10px 20px;
+            }
+          </style>
+    </head>
+    
+    <body></body>
+  
+  <script>
+
+    /** Create timeline **/
+    var timeline = [];
+
+//    /** init connection with pavlovia.org **/
+//    var pavlovia_init = {
+//        type: "pavlovia",
+//        command: "init"
+//    };
+//    timeline.push(pavlovia_init);
+
+    /** Prompt subject_id **/
+    var subject_id = {
+        type: 'survey-text',
+        questions: [
+            {prompt: 'Enter your participant id',
+            placeholder: 'You can find this information in the email',
+            required: true, name: 'subject_id'}
+        ],
+        on_finish: function(data){
+            data.subject_id = data.response
+            data.lang_comm = "Concordia"
+        }
+    };
+    timeline.push(subject_id)
+
+    /** Specify fullscreen **/
+    timeline.push({
+        type: 'fullscreen',
+        message: "<p>Welcome to the study!</p>" +
+        "<p>Please hold your device <b>horizontally</b> throughout the study. <b>Make sure your audio is not muted</b> before you press the button below</p>",
+        fullscreen_mode: true
+    })
+
+
+    /** Preload audios & images **/
+    var audios_to_preload = [
+        //instructions audio
+        'sound/welcome_English.mp3', 'sound/welcome_French.mp3', 'sound/instruction1.mp3', 
+        'sound/instruction2.mp3', 'sound/instruction3.mp3', 'sound/instruction4.mp3', 'sound/end.mp3',
+        //familiar word phase audio
+        'sound/familiar_book.mp3', 'sound/familiar_book_5s.mp3', 
+        'sound/familiar_cookie.mp3', 'sound/familiar_cookie_5s.mp3', 
+        'sound/familiar_nose.mp3', 'sound/familiar_nose_5s.mp3',
+        'sound/familiar_key.mp3', 'sound/familiar_key_5s.mp3', 
+        'sound/familiar_doggy.mp3', 'sound/familiar_doggy_5s.mp3',
+        'sound/familiar_spoon.mp3', 'sound/familiar_spoon_5s.mp3',
+        'sound/familiar_chaise.mp3', 'sound/familiar_chaise_5s.mp3',
+        'sound/familiar_bouche.mp3', 'sound/familiar_bouche_5s.mp3', 
+        'sound/familiar_poupee.mp3', 'sound/familiar_poupee_5s.mp3',
+        'sound/familiar_main.mp3', 'sound/familiar_main_5s.mp3',
+        'sound/familiar_chat.mp3', 'sound/familiar_chat_5s.mp3',
+        'sound/familiar_pied.mp3', 'sound/familiar_pied_5s.mp3',
+        //novel learning phase audio
+        'sound/whistle.mp3', 
+        'sound/learning_blicket_here.mp3', 'sound/learning_blicket_look.mp3',
+        'sound/learning_tulver_here.mp3', 'sound/learning_tulver_look.mp3',
+        'sound/learning_gasser_here.mp3', 'sound/learning_gasser_look.mp3',
+        'sound/learning_waydle_here.mp3', 'sound/learning_waydle_look.mp3',
+        'sound/learning_cantait_regarde.mp3', 'sound/learning_cantait_voici.mp3',
+        'sound/learning_donquete_regarde.mp3', 'sound/learning_donquete_voici.mp3',
+        'sound/learning_puismenne_regarde.mp3', 'sound/learning_puismenne_voici.mp3',
+        'sound/learning_sidon_regarde.mp3', 'sound/learning_sidon_voici.mp3',
+        //novel test phase audio
+        'sound/test_blicket.mp3', 'sound/test_blicket_5s.mp3',
+        'sound/test_tulver.mp3', 'sound/test_tulver_5s.mp3',
+        'sound/test_gasser.mp3', 'sound/test_gasser_5s.mp3',
+        'sound/test_waydle.mp3', 'sound/test_waydle_5s.mp3',
+        'sound/test_cantait.mp3', 'sound/test_cantait_5s.mp3', 
+        'sound/test_donquete.mp3', 'sound/test_donquete_5s.mp3',
+        'sound/test_puismenne.mp3', 'sound/test_puismenne_5s.mp3', 
+        'sound/test_sidon.mp3', 'sound/test_sidon_5s.mp3', 
+        //reinforcement audio
+        'sound/chime.mp3', 'sound/reinforcement_eng_LetsPlaySomeMore.mp3', 'sound/reinforcement_fr_BeauTravail.mp3'
+    ];
+
+    var images_to_preload = ['img/Dos_Donts_Eng.jpg', 'img/Dos_Donts_Fr.jpg', 'img/TeacherOwl.jpg',
+        'img/book.jpg', 'img/chair.jpg', 'img/cookie.jpg', 'img/doggy.jpg', 'img/doll.jpg', 'img/foot.jpg', 
+        'img/hand.jpg', 'img/key.jpg', 'img/kitty.jpg', 'img/mouth.jpg', 'img/nose.jpg', 'img/spoon.jpg', 
+        'img/Gasser_Cantait_Sasco.jpg', 'img/Waydle_Sidon_Delvo.jpg',
+        'img/Blicket_Puismenne_Kina.jpg', 'img/Tulver_Donquete_Pifa.jpg'
+    ];
+
+    var preload_files = {
+        type: 'preload',
+        auto_auto_preload: true, // automatically load all files based on the main timeline
+        audio: audios_to_preload, // preload the list of audios
+        images: images_to_preload, // preload the list of images
+        message: '<p>Please wait while the task loads.</p>',
+        show_progress_bar: true,
+        continue_after_error: false,
+        show_detailed_errors: true,
+        max_load_time: 120000 //120 seconds
+    };
+    timeline.push(preload_files);
+
+
+    /** Define welcome message trial **/
+    // parents will be asked to pick a language in which the "Dos and Donts" recording will be played
+    var welcome_procedure = {
+        timeline: [
+            {
+                type: 'html-button-response',
+                stimulus: "<p>Which language do you prefer?</p>",
+                choices: ['English','French'],
+                margin_horizontal: '50px',
+                on_finish: function(data){
+                    var language_selected;
+                    if(data.response == 0){
+                        language_selected = "English";
+                    } else {
+                        language_selected = "French";
+                    }
+                    data.button_selected = language_selected
+                    data.test_part = "welcome"
+                }
+            },
+            {
+                type: 'audio-button-response',
+                stimulus: function(){
+                    var data = jsPsych.data.get().last(1).values()[0];
+                    if(data.response == '0'){ // if they choose "English", the English "Dos and Donts" will be played
+                        return 'sound/welcome_English.mp3'
+                    } else {
+                        return 'sound/welcome_French.mp3'
+                    }
+                },
+                choices: ['START'],
+                button_html: function(){
+                    var data = jsPsych.data.get().last(1).values()[0];
+                    if(data.response == '0'){ // if they choose "English", the English "Dos and Donts" image will be shown
+                        return '<img src = "img/Dos_Donts_Eng.jpg" width = "80%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"></img>'
+                    } else {
+                        return '<img src = "img/Dos_Donts_Fr.jpg" width = "80%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"></img>'
+                    }
+                },
+                response_ends_trial: false,
+                trial_ends_after_audio: true
+            },
+            {
+                type: 'html-button-response',
+                stimulus: [],
+                choices: ['START'],
+                response_ends_trial: true
+            }
+        ]
+    };
+    timeline.push(welcome_procedure);
+
+
+    /** Define instructions procedure **/
+    var instructions_procedure = {
+        choices: ['YES'],
+        button_html: '<img src = "img/TeacherOwl.jpg" width = "90%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"></img>',
+        timeline: [
+            {//Instruction1: audio only (no response allowed)
+                type: 'audio-button-response',
+                stimulus: 'sound/instruction1.mp3',
+                response_ends_trial: false,
+                trial_ends_after_audio: true
+            },
+            {//Instruction1: response allowed
+                type: 'html-button-response',
+                stimulus: [],
+                response_ends_trial: true,
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                post_trial_gap: 300 //a 300ms intertrial pause
+            },
+            {//Instruction2: audio only (no response allowed)
+                type: 'audio-button-response',
+                stimulus: 'sound/instruction2.mp3',
+                response_ends_trial: false,
+                trial_ends_after_audio: true
+            },
+            {//Instruction2: response allowed
+                type: 'html-button-response',
+                stimulus: [],
+                response_ends_trial: true,
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                post_trial_gap: 300 //a 300ms gap before going into the fam_test_trial
+            }
+        ]
+    };
+    timeline.push(instructions_procedure);
+
+
+    /** Define familiar word phase **/
+    /* Prepare stimuli for familiar test trial -- 
+    the position of the objects are pseudorandomized to ensure an equal number of clicks on each size */
+    var eng_fam_test_stimuli = [
+            {eng_fam_audio1:"sound/familiar_book.mp3", eng_fam_audio2:"sound/familiar_book_5s.mp3", eng_fam_choices:["spoon","book"], button_correct: "book"},
+            {eng_fam_audio1: "sound/familiar_nose.mp3", eng_fam_audio2:"sound/familiar_nose_5s.mp3", eng_fam_choices:["nose","doggy"], button_correct: "nose"},
+            {eng_fam_audio1:"sound/familiar_cookie.mp3", eng_fam_audio2:"sound/familiar_cookie_5s.mp3", eng_fam_choices:["key","cookie"], button_correct: "cookie"},
+            {eng_fam_audio1: "sound/familiar_doggy.mp3", eng_fam_audio2:"sound/familiar_doggy_5s.mp3", eng_fam_choices:["doggy","nose"], button_correct: "doggy"},
+            {eng_fam_audio1:"sound/familiar_key.mp3", eng_fam_audio2:"sound/familiar_key_5s.mp3", eng_fam_choices:["cookie","key"], button_correct: "key"},
+            {eng_fam_audio1:"sound/familiar_spoon.mp3", eng_fam_audio2:"sound/familiar_spoon_5s.mp3", eng_fam_choices:["spoon","book"], button_correct: "spoon"}
+        ]
+
+    var fr_fam_test_stimuli = [
+            {fr_fam_audio1:"sound/familiar_chat.mp3", fr_fam_audio2:"sound/familiar_chat_5s.mp3", fr_fam_choices:["kitty","mouth"], button_correct: "kitty"},
+            {fr_fam_audio1: "sound/familiar_chaise.mp3", fr_fam_audio2:"sound/familiar_chaise_5s.mp3", fr_fam_choices:["hand","chair"], button_correct: "chair"},
+            {fr_fam_audio1: "sound/familiar_main.mp3", fr_fam_audio2:"sound/familiar_main_5s.mp3", fr_fam_choices:["chair","hand"], button_correct: "hand"},
+            {fr_fam_audio1:"sound/familiar_poupee.mp3", fr_fam_audio2:"sound/familiar_poupee_5s.mp3", fr_fam_choices:["doll","foot"], button_correct: "doll"},
+            {fr_fam_audio1:"sound/familiar_bouche.mp3", fr_fam_audio2:"sound/familiar_bouche_5s.mp3", fr_fam_choices:["kitty","mouth"], button_correct: "mouth"},
+            {fr_fam_audio1:"sound/familiar_pied.mp3", fr_fam_audio2:"sound/familiar_pied_5s.mp3", fr_fam_choices:["foot","doll"], button_correct: "foot"}
+        ]
+
+
+    /* define fam_test trial */
+    var eng_fam_test_trial = {
+        type:'audio-button-response',
+        choices: jsPsych.timelineVariable('eng_fam_choices'),
+        button_html: [
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; left: 2%;">',
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; right: 2%;">'
+        ],
+        timeline: [
+            {//audio only (no response allowed)
+                stimulus: jsPsych.timelineVariable('eng_fam_audio1'),
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                }
+            },
+            {//response allowed and audio replayed after 5s
+                stimulus: jsPsych.timelineVariable('eng_fam_audio2'),
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                on_start: function(trial){
+                    trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                    trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "fam_test"
+                    data.language = "english"
+                    data.condition = "familiar"
+                    data.button_correct = jsPsych.timelineVariable('button_correct')
+                    button_number = data.response
+                    data.button_selected = data.button_choices[button_number]
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }
+        ],
+        timeline_variables: eng_fam_test_stimuli
+    };
+
+    var fr_fam_test_trial = {
+        type:'audio-button-response',
+        choices: jsPsych.timelineVariable('fr_fam_choices'),
+        button_html: [
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; left: 2%;">',
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; right: 2%;">'
+        ],
+        timeline: [
+            {//audio only (no response allowed)
+                stimulus: jsPsych.timelineVariable('fr_fam_audio1'),
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                }
+            },
+            {//response allowed and audio replayed after 5s
+                stimulus: jsPsych.timelineVariable('fr_fam_audio2'),
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                on_start: function(trial){
+                    trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                    trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "fam_test"
+                    data.language = "french"
+                    data.condition = "familiar"
+                    data.button_correct = jsPsych.timelineVariable('button_correct')
+                    button_number = data.response
+                    data.button_selected = data.button_choices[button_number]
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }        
+        ],
+        timeline_variables: fr_fam_test_stimuli
+    }
+    
+    var fam_test_procedure = {
+        timeline: [eng_fam_test_trial, fr_fam_test_trial],
+        repetitions: 1
+    };
+    timeline.push(fam_test_procedure);
+    
+
+    /* Transition to learning phase */
+    var transition_to_learning_procedure = {
+        choices: ['YES'],
+        button_html: '<img src = "img/TeacherOwl.jpg" width = "90%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"></img>',
+        timeline: [
+            {
+                type: 'audio-button-response',
+                stimulus: 'sound/instruction3.mp3',
+                response_ends_trial: false,
+                trial_ends_after_audio: true
+            },
+            {
+                type: 'html-button-response',
+                stimulus: [],
+                response_ends_trial: true,
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                post_trial_gap: 300 //a 300ms intertrial pause
+
+            }
+        ]
+    };
+    timeline.push(transition_to_learning_procedure);
+    
+
+    /** BLOCK 1: One-language-at-a-time condition **/
+    /* Prepare stimuli for novel learning phase --
+    the position of the objects are pseudorandomized to ensure an equal number of clicks on each size */
+    var nov_learn_gasser_stimuli = [
+        {nov_learn_gasser_img: "Gasser_Cantait_Sasco", nov_learn_gasser_audio: "sound/learning_gasser_look.mp3", img_position: "BL"},
+        {nov_learn_gasser_img: "Gasser_Cantait_Sasco", nov_learn_gasser_audio: "sound/learning_gasser_here.mp3", img_position: "TR"},
+        {nov_learn_gasser_img: "Gasser_Cantait_Sasco", nov_learn_gasser_audio: "sound/learning_gasser_look.mp3", img_position: "BR"}
+    ]
+
+    var nov_learn_cantait_stimuli = [
+        {nov_learn_cantait_img: "Gasser_Cantait_Sasco", nov_learn_cantait_audio: "sound/learning_cantait_voici.mp3", img_position: "TR"},
+        {nov_learn_cantait_img: "Gasser_Cantait_Sasco", nov_learn_cantait_audio: "sound/learning_cantait_regarde.mp3", img_position: "BL"},
+        {nov_learn_cantait_img: "Gasser_Cantait_Sasco", nov_learn_cantait_audio: "sound/learning_cantait_voici.mp3", img_position: "TL"}
+    ]
+
+    var nov_learn_waydle_stimuli = [
+        {nov_learn_waydle_img: "Waydle_Sidon_Delvo", nov_learn_waydle_audio: "sound/learning_waydle_here.mp3", img_position: "BR"},
+        {nov_learn_waydle_img: "Waydle_Sidon_Delvo", nov_learn_waydle_audio: "sound/learning_waydle_here.mp3", img_position: "TL"},
+        {nov_learn_waydle_img: "Waydle_Sidon_Delvo", nov_learn_waydle_audio: "sound/learning_waydle_look.mp3", img_position: "BL"}
+    ]
+
+    var nov_learn_sidon_stimuli = [
+        {nov_learn_sidon_img: "Waydle_Sidon_Delvo", nov_learn_sidon_audio: "sound/learning_sidon_regarde.mp3", img_position: "TR"},
+        {nov_learn_sidon_img: "Waydle_Sidon_Delvo", nov_learn_sidon_audio: "sound/learning_sidon_voici.mp3", img_position: "TL"},
+        {nov_learn_sidon_img: "Waydle_Sidon_Delvo", nov_learn_sidon_audio: "sound/learning_sidon_regarde.mp3", img_position: "BR"}
+    ]
+
+    /* define novel learning phase */
+    // Nov learn blocked by Object: Object 1 -- Gasser-Cantait //
+    var nov_learn_gasser_trial = {
+        type: "audio-button-response",
+        choices: jsPsych.timelineVariable('nov_learn_gasser_img'),
+        button_html: function() {
+            if(jsPsych.timelineVariable('img_position') == 'BL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_gasser_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'BR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_gasser_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; right: 5%;">'
+            } 
+            if(jsPsych.timelineVariable('img_position') == 'TL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_gasser_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'TR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_gasser_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; right: 5%;">'
+            }
+        },
+        timeline: [
+            {//nov_learn audio & response allowed; 
+             //if any response is made, the chime sound immediately follows upon the end of the audio
+                stimulus: jsPsych.timelineVariable('nov_learn_gasser_audio'),
+                response_allowed_while_playing: true,
+                response_ends_trial: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block1_nov_learn"
+                    data.language = "english"
+                    data.condition = "one_language_at_a_time"
+                    data.button_correct = "Gasser_Cantait_Sasco"
+                }                        
+            },
+            {//if no response is made during the audio, the whistle sound will play after 5s
+                timeline: [{
+                    type: "audio-button-response",
+                    stimulus: 'sound/whistle.mp3',
+                    response_allowed_while_playing: true,
+                    response_ends_trial: true,
+                    trial_duration: 10000,
+                    on_start: function(trial){
+                        trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                        trial.data = {button_choices:trial.choices}
+                    },
+                    on_finish: function(data){
+                        data.test_part = "block1_nov_learn"
+                        data.language = "english"
+                        data.condition = "one_language_at_a_time"
+                        data.button_correct = "Gasser_Cantait_Sasco"
+                    }
+                }],
+                conditional_function: function(){
+                    // get the data from the previous trial and check if response has been made
+                    var last_trial = jsPsych.data.get().last(1).values()[0];
+                        if (last_trial.rt == null) { 
+                            return true; // if they haven't made a response, then enter the whistle trial
+                        } else {
+                            return false; // if they already made a response, do not enter the whistle trial
+                        }
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }      
+        ],
+        timeline_variables: nov_learn_gasser_stimuli
+    }
+
+    var nov_learn_cantait_trial = {
+        type: "audio-button-response",
+        choices: jsPsych.timelineVariable('nov_learn_cantait_img'),
+        button_html: function() {
+            if(jsPsych.timelineVariable('img_position') == 'BL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_cantait_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'BR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_cantait_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; right: 5%;">'
+            } 
+            if(jsPsych.timelineVariable('img_position') == 'TL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_cantait_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'TR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_cantait_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; right: 5%;">'
+            }
+        },
+        timeline: [
+            {//nov_learn audio & response allowed; 
+             //if any response is made, the chime sound immediately follows upon the end of the audio
+                stimulus: jsPsych.timelineVariable('nov_learn_cantait_audio'),
+                response_allowed_while_playing: true,
+                response_ends_trial: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block1_nov_learn"
+                    data.language = "french"
+                    data.condition = "one_language_at_a_time"
+                    data.button_correct = "Gasser_Cantait_Sasco"
+                }                     
+            },
+            {//if no response is made during the audio, the whistle sound will play after 5s
+                timeline: [{
+                    type: "audio-button-response",
+                    stimulus: 'sound/whistle.mp3',
+                    response_allowed_while_playing: true,
+                    response_ends_trial: true,
+                    trial_duration: 10000,
+                    on_start: function(trial){
+                        trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                        trial.data = {button_choices:trial.choices}
+                    },
+                    on_finish: function(data){
+                        data.test_part = "block1_nov_learn"
+                        data.language = "french"
+                        data.condition = "one_language_at_a_time"
+                        data.button_correct = "Gasser_Cantait_Sasco"
+                    }
+                }],
+                conditional_function: function(){
+                    // get the data from the previous trial and check if response has been made
+                    var last_trial = jsPsych.data.get().last(1).values()[0];
+                        if (last_trial.rt == null) { 
+                            return true; // if they haven't made a response, then enter the whistle trial
+                        } else {
+                            return false; // if they already made a response, do not enter the whistle trial
+                        }
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }      
+        ],
+        timeline_variables: nov_learn_cantait_stimuli
+    }
+
+    // Nov learn blocked by Object: Object 2 -- Waydle-Sidon //
+    var nov_learn_waydle_trial = {
+        type: "audio-button-response",
+        choices: jsPsych.timelineVariable('nov_learn_waydle_img'),
+        button_html: function() {
+            if(jsPsych.timelineVariable('img_position') == 'BL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_waydle_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'BR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_waydle_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; right: 5%;">'
+            } 
+            if(jsPsych.timelineVariable('img_position') == 'TL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_waydle_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'TR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_waydle_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; right: 5%;">'
+            }
+        },
+        timeline: [
+            {//nov_learn audio & response allowed; 
+             //if any response is made, the chime sound immediately follows upon the end of the audio
+                stimulus: jsPsych.timelineVariable('nov_learn_waydle_audio'),
+                response_allowed_while_playing: true,
+                response_ends_trial: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block1_nov_learn"
+                    data.language = "english"
+                    data.condition = "one_language_at_a_time"
+                    data.button_correct = "Waydle_Sidon_Delvo"
+                }                        
+            },
+            {//if no response is made during the audio, the whistle sound will play after 5s
+                timeline: [{
+                    type: "audio-button-response",
+                    stimulus: 'sound/whistle.mp3',
+                    response_allowed_while_playing: true,
+                    response_ends_trial: true,
+                    trial_duration: 10000,
+                    on_start: function(trial){
+                        trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                        trial.data = {button_choices:trial.choices}
+                    },
+                    on_finish: function(data){
+                        data.test_part = "block1_nov_learn"
+                        data.language = "english"
+                        data.condition = "one_language_at_a_time"
+                        data.button_correct = "Waydle_Sidon_Delvo"
+                    }
+                }],
+                conditional_function: function(){
+                    // get the data from the previous trial and check if response has been made
+                    var last_trial = jsPsych.data.get().last(1).values()[0];
+                        if (last_trial.rt == null) { 
+                            return true; // if they haven't made a response, then enter the whistle trial
+                        } else {
+                            return false; // if they already made a response, do not enter the whistle trial
+                        }
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }      
+        ],
+        timeline_variables: nov_learn_waydle_stimuli
+    }
+
+    var nov_learn_sidon_trial = {
+        type: "audio-button-response",
+        choices: jsPsych.timelineVariable('nov_learn_sidon_img'),
+        button_html: function() {
+            if(jsPsych.timelineVariable('img_position') == 'BL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_sidon_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'BR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_sidon_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; right: 5%;">'
+            } 
+            if(jsPsych.timelineVariable('img_position') == 'TL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_sidon_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'TR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_sidon_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; right: 5%;">'
+            }
+        },
+        timeline: [
+            {//nov_learn audio & response allowed; 
+             //if any response is made, the chime sound immediately follows upon the end of the audio
+                stimulus: jsPsych.timelineVariable('nov_learn_sidon_audio'),
+                response_allowed_while_playing: true,
+                response_ends_trial: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block1_nov_learn"
+                    data.language = "french"
+                    data.condition = "one_language_at_a_time"
+                    data.button_correct = "Waydle_Sidon_Delvo"
+                }                        
+            },
+            {//if no response is made during the audio, the whistle sound will play after 5s
+                timeline: [{
+                    type: "audio-button-response",
+                    stimulus: 'sound/whistle.mp3',
+                    response_allowed_while_playing: true,
+                    response_ends_trial: true,
+                    trial_duration: 10000,
+                    on_start: function(trial){
+                        trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                        trial.data = {button_choices:trial.choices}
+                    },
+                    on_finish: function(data){
+                        data.test_part = "block1_nov_learn"
+                        data.language = "french"
+                        data.condition = "one_language_at_a_time"
+                        data.button_correct = "Waydle_Sidon_Delvo"
+                    }
+                }],
+                conditional_function: function(){
+                    // get the data from the previous trial and check if response has been made
+                    var last_trial = jsPsych.data.get().last(1).values()[0];
+                        if (last_trial.rt == null) { 
+                            return true; // if they haven't made a response, then enter the whistle trial
+                        } else {
+                            return false; // if they already made a response, do not enter the whistle trial
+                        }
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }      
+        ],
+        timeline_variables: nov_learn_sidon_stimuli
+    }
+
+    var nov_learn_gasser_cantait_procedure = {
+        timeline: [nov_learn_gasser_trial, nov_learn_cantait_trial],
+        repetitions: 1
+    };
+
+    var nov_learn_waydle_sidon_procedure = {
+        timeline: [nov_learn_waydle_trial, nov_learn_sidon_trial],
+        repetitions: 1
+    };
+
+    var block1_nov_learn_procedure = {
+        timeline: jsPsych.randomization.shuffle([nov_learn_gasser_cantait_procedure, nov_learn_waydle_sidon_procedure]),
+        repetitions: 1
+    };
+    timeline.push(block1_nov_learn_procedure);
+
+
+    /* Reinforcement transitioning to novel test phase */
+    var reinforcment_to_nov_test = {
+        type: 'audio-button-response',
+        stimulus: 'sound/reinforcement_eng_LetsPlaySomeMore.mp3',
+        choices: ['YES'],
+        button_html: '<img src = "img/TeacherOwl.jpg" width = "90%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"></img>',
+        response_ends_trial: false,
+        trial_ends_after_audio: true,
+        post_trial_gap: 300
+    };
+    timeline.push(reinforcment_to_nov_test);
+
+
+    /* Prepare stimuli for novel test trial -- 
+    the position of the objects are pseudorandomized to ensure an equal number of clicks on each size */
+    var eng_nov_test_stimuli = [
+            {eng_nov_test_audio1:"sound/test_gasser.mp3", eng_nov_test_audio2:"sound/test_gasser_5s.mp3", eng_nov_test_choices:["Gasser_Cantait_Sasco", "Waydle_Sidon_Delvo"], button_correct: "Gasser_Cantait_Sasco"},
+            {eng_nov_test_audio1:"sound/test_waydle.mp3", eng_nov_test_audio2:"sound/test_waydle_5s.mp3", eng_nov_test_choices:["Gasser_Cantait_Sasco", "Waydle_Sidon_Delvo"], button_correct: "Waydle_Sidon_Delvo"},
+            {eng_nov_test_audio1:"sound/test_waydle.mp3", eng_nov_test_audio2:"sound/test_waydle_5s.mp3", eng_nov_test_choices:["Waydle_Sidon_Delvo","Gasser_Cantait_Sasco"], button_correct: "Waydle_Sidon_Delvo"},
+            {eng_nov_test_audio1:"sound/test_gasser.mp3", eng_nov_test_audio2:"sound/test_gasser_5s.mp3", eng_nov_test_choices:["Waydle_Sidon_Delvo","Gasser_Cantait_Sasco"], button_correct: "Gasser_Cantait_Sasco"},
+            {eng_nov_test_audio1:"sound/test_gasser.mp3", eng_nov_test_audio2:"sound/test_gasser_5s.mp3", eng_nov_test_choices:["Gasser_Cantait_Sasco", "Waydle_Sidon_Delvo"], button_correct: "Gasser_Cantait_Sasco"},
+            {eng_nov_test_audio1:"sound/test_waydle.mp3", eng_nov_test_audio2:"sound/test_waydle_5s.mp3", eng_nov_test_choices:["Gasser_Cantait_Sasco", "Waydle_Sidon_Delvo"], button_correct: "Waydle_Sidon_Delvo"}
+        ]
+
+    var fr_nov_test_stimuli = [
+            {fr_nov_test_audio1:"sound/test_cantait.mp3", fr_nov_test_audio2:"sound/test_cantait_5s.mp3", fr_nov_test_choices:["Gasser_Cantait_Sasco", "Waydle_Sidon_Delvo"], button_correct: "Gasser_Cantait_Sasco"},
+            {fr_nov_test_audio1:"sound/test_sidon.mp3", fr_nov_test_audio2:"sound/test_sidon_5s.mp3", fr_nov_test_choices:["Waydle_Sidon_Delvo","Gasser_Cantait_Sasco"], button_correct: "Waydle_Sidon_Delvo"},             
+            {fr_nov_test_audio1:"sound/test_cantait.mp3", fr_nov_test_audio2:"sound/test_cantait_5s.mp3", fr_nov_test_choices:["Waydle_Sidon_Delvo","Gasser_Cantait_Sasco"], button_correct: "Gasser_Cantait_Sasco"},
+            {fr_nov_test_audio1:"sound/test_sidon.mp3", fr_nov_test_audio2:"sound/test_sidon_5s.mp3", fr_nov_test_choices:["Gasser_Cantait_Sasco", "Waydle_Sidon_Delvo"], button_correct: "Waydle_Sidon_Delvo"},
+            {fr_nov_test_audio1:"sound/test_sidon.mp3", fr_nov_test_audio2:"sound/test_sidon_5s.mp3", fr_nov_test_choices:["Waydle_Sidon_Delvo","Gasser_Cantait_Sasco"], button_correct: "Waydle_Sidon_Delvo"},
+            {fr_nov_test_audio1:"sound/test_cantait.mp3", fr_nov_test_audio2:"sound/test_cantait_5s.mp3", fr_nov_test_choices:["Waydle_Sidon_Delvo","Gasser_Cantait_Sasco"], button_correct: "Gasser_Cantait_Sasco"}
+        ]
+
+    /* define nov_test trial */
+    var eng_nov_test_trial = {
+        type:'audio-button-response',
+        choices: jsPsych.timelineVariable('eng_nov_test_choices'),
+        button_html: [
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; left: 2%;">',
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; right: 2%;">'
+        ],
+        timeline: [
+            {//audio only (no response allowed)
+                stimulus: jsPsych.timelineVariable('eng_nov_test_audio1'),
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                }
+            },
+            {//response allowed and audio replayed after 5s
+                stimulus: jsPsych.timelineVariable('eng_nov_test_audio2'),
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                on_start: function(trial){
+                    trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                    trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block1_nov_test"
+                    data.language = "english"
+                    data.condition = "one_language_at_a_time"
+                    data.button_correct = jsPsych.timelineVariable('button_correct')
+                    button_number = data.response
+                    data.button_selected = data.button_choices[button_number]
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }
+        ],
+        timeline_variables: eng_nov_test_stimuli
+    }
+
+    var fr_nov_test_trial = {
+        type:'audio-button-response',
+        choices: jsPsych.timelineVariable('fr_nov_test_choices'),
+        button_html: [
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; left: 2%;">',
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; right: 2%;">'
+        ],
+        timeline: [
+            {//audio only (no response allowed)
+                stimulus: jsPsych.timelineVariable('fr_nov_test_audio1'),
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                }
+            },
+            {//response allowed and audio replayed after 5s
+                stimulus: jsPsych.timelineVariable('fr_nov_test_audio2'),
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                on_start: function(trial){
+                    trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                    trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block1_nov_test"
+                    data.language = "french"
+                    data.condition = "one_language_at_a_time"
+                    data.button_correct = jsPsych.timelineVariable('button_correct')
+                    button_number = data.response
+                    data.button_selected = data.button_choices[button_number]
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }
+        ],
+        timeline_variables: fr_nov_test_stimuli
+    }
+    
+    var nov_test_procedure = {
+        timeline: [eng_nov_test_trial, fr_nov_test_trial],
+        repetitions: 1
+    };
+    timeline.push(nov_test_procedure);
+
+
+    /** Transition to Block 2 **/
+        var transition_to_block2_procedure = {
+        choices: ['YES'],
+        button_html: '<img src = "img/TeacherOwl.jpg" width = "90%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"></img>',
+        timeline: [
+            {
+                type: 'audio-button-response',
+                stimulus: 'sound/instruction4.mp3',
+                response_ends_trial: false,
+                trial_ends_after_audio: true
+            },
+            {
+                type: 'html-button-response',
+                stimulus: [],
+                response_ends_trial: true,
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                post_trial_gap: 300 //a 300ms intertrial pause
+            }
+        ]
+    };
+    timeline.push(transition_to_block2_procedure);
+
+
+    /** BLOCK 2: Immediate translation condition **/
+    /* Prepare stimuli for novel learning phase --
+        the position of the objects are pseudorandomized to ensure an equal number of clicks on each size */
+    var nov_learn_blicket_puismenne_stimuli = [
+        {nov_learn_blicket_puismenne_img: "Blicket_Puismenne_Kina", nov_learn_blicket_puismenne_audio: "sound/learning_blicket_here.mp3", img_position: "TL"},
+        {nov_learn_blicket_puismenne_img: "Blicket_Puismenne_Kina", nov_learn_blicket_puismenne_audio: "sound/learning_puismenne_voici.mp3", img_position: "BL"},
+        {nov_learn_blicket_puismenne_img: "Blicket_Puismenne_Kina", nov_learn_blicket_puismenne_audio: "sound/learning_blicket_look.mp3", img_position: "TR"},
+        {nov_learn_blicket_puismenne_img: "Blicket_Puismenne_Kina", nov_learn_blicket_puismenne_audio: "sound/learning_puismenne_regarde.mp3", img_position: "TL"},
+        {nov_learn_blicket_puismenne_img: "Blicket_Puismenne_Kina", nov_learn_blicket_puismenne_audio: "sound/learning_blicket_look.mp3", img_position: "BR"},
+        {nov_learn_blicket_puismenne_img: "Blicket_Puismenne_Kina", nov_learn_blicket_puismenne_audio: "sound/learning_puismenne_regarde.mp3", img_position: "TR"}
+    ]
+
+    var nov_learn_tulver_donquete_stimuli = [
+        {nov_learn_tulver_donquete_img: "Tulver_Donquete_Pifa", nov_learn_tulver_donquete_audio: "sound/learning_tulver_here.mp3", img_position: "TL"},
+        {nov_learn_tulver_donquete_img: "Tulver_Donquete_Pifa", nov_learn_tulver_donquete_audio: "sound/learning_donquete_voici.mp3", img_position: "BL"},
+        {nov_learn_tulver_donquete_img: "Tulver_Donquete_Pifa", nov_learn_tulver_donquete_audio: "sound/learning_tulver_look.mp3", img_position: "BR"},
+        {nov_learn_tulver_donquete_img: "Tulver_Donquete_Pifa", nov_learn_tulver_donquete_audio: "sound/learning_donquete_regarde.mp3", img_position: "BL"},
+        {nov_learn_tulver_donquete_img: "Tulver_Donquete_Pifa", nov_learn_tulver_donquete_audio: "sound/learning_tulver_here.mp3", img_position: "BR"},
+        {nov_learn_tulver_donquete_img: "Tulver_Donquete_Pifa", nov_learn_tulver_donquete_audio: "sound/learning_donquete_voici.mp3", img_position: "TR"}
+    ]
+
+    /* define novel learning phase */
+    // Nov learn blocked by Object: Object 3 -- Blicket-Puismenne //
+    var nov_learn_blicket_puismenne_trial = {
+        type: "audio-button-response",
+        choices: jsPsych.timelineVariable('nov_learn_blicket_puismenne_img'),
+        button_html: function() {
+            if(jsPsych.timelineVariable('img_position') == 'BL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_blicket_puismenne_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'BR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_blicket_puismenne_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; right: 5%;">'
+            } 
+            if(jsPsych.timelineVariable('img_position') == 'TL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_blicket_puismenne_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'TR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_blicket_puismenne_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; right: 5%;">'
+            }
+        },
+        timeline: [
+            {//nov_learn audio & response allowed; 
+             //if any response is made, the chime sound immediately follows upon the end of the audio
+                stimulus: jsPsych.timelineVariable('nov_learn_blicket_puismenne_audio'),
+                response_allowed_while_playing: true,
+                response_ends_trial: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block2_nov_learn"
+                    data.language = "english-french"
+                    data.condition = "immediate_translation"
+                    data.button_correct = "Blicket_Puismenne_Kina"
+                }                        
+            },
+            {//if no response is made during the audio, the whistle sound will play after 5s
+                timeline: [{
+                    type: "audio-button-response",
+                    stimulus: 'sound/whistle.mp3',
+                    response_allowed_while_playing: true,
+                    response_ends_trial: true,
+                    trial_duration: 10000,
+                    on_start: function(trial){
+                        trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                        trial.data = {button_choices:trial.choices}
+                    },
+                    on_finish: function(data){
+                        data.test_part = "block2_nov_learn"
+                        data.language = "english-french"
+                        data.condition = "immediate_translation"
+                        data.button_correct = "Blicket_Puismenne_Kina"
+                    }
+                }],
+                conditional_function: function(){
+                    // get the data from the previous trial and check if response has been made
+                    var last_trial = jsPsych.data.get().last(1).values()[0];
+                        if (last_trial.rt == null) { 
+                            return true; // if they haven't made a response, then enter the whistle trial
+                        } else {
+                            return false; // if they already made a response, do not enter the whistle trial
+                        }
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }      
+        ],
+        timeline_variables: nov_learn_blicket_puismenne_stimuli
+    }
+
+    // Nov learn blocked by Object: Object 4 -- Tulver-Donquete //
+    var nov_learn_tulver_donquete_trial = {
+        type: "audio-button-response",
+        choices: jsPsych.timelineVariable('nov_learn_tulver_donquete_img'),
+        button_html: function() {
+            if(jsPsych.timelineVariable('img_position') == 'BL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_tulver_donquete_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'BR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_tulver_donquete_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; bottom: 0%; right: 5%;">'
+            } 
+            if(jsPsych.timelineVariable('img_position') == 'TL') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_tulver_donquete_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; left: 5%;">'
+            }
+            if(jsPsych.timelineVariable('img_position') == 'TR') {
+                return '<img src="img/'+jsPsych.timelineVariable('nov_learn_tulver_donquete_img')+'.jpg" width = "23%", style="position: fixed; position: fixed; top: 0%; right: 5%;">'
+            }
+        },
+        timeline: [
+            {//nov_learn audio & response allowed; 
+             //if any response is made, the chime sound immediately follows upon the end of the audio
+                stimulus: jsPsych.timelineVariable('nov_learn_tulver_donquete_audio'),
+                response_allowed_while_playing: true,
+                response_ends_trial: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block2_nov_learn"
+                    data.language = "english-french"
+                    data.condition = "immediate_translation"
+                    data.button_correct = "Tulver_Donquete_Pifa"
+                }                        
+            },
+            {//if no response is made during the audio, the whistle sound will play after 5s
+                timeline: [{
+                    type: "audio-button-response",
+                    stimulus: 'sound/whistle.mp3',
+                    response_allowed_while_playing: true,
+                    response_ends_trial: true,
+                    trial_duration: 10000,
+                    on_start: function(trial){
+                        trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                        trial.data = {button_choices:trial.choices}
+                    },
+                    on_finish: function(data){
+                        data.test_part = "block2_nov_learn"
+                        data.language = "english-french"
+                        data.condition = "immediate_translation"
+                        data.button_correct = "Tulver_Donquete_Pifa"
+                    }
+                }],
+                conditional_function: function(){
+                    // get the data from the previous trial and check if response has been made
+                    var last_trial = jsPsych.data.get().last(1).values()[0];
+                        if (last_trial.rt == null) { 
+                            return true; // if they haven't made a response, then enter the whistle trial
+                        } else {
+                            return false; // if they already made a response, do not enter the whistle trial
+                        }
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }      
+        ],
+        timeline_variables: nov_learn_tulver_donquete_stimuli
+    }
+    
+    var block2_nov_learn_procedure = {
+        timeline: jsPsych.randomization.shuffle([nov_learn_blicket_puismenne_trial, nov_learn_tulver_donquete_trial]),
+        repetitions: 1
+    };
+    timeline.push(block2_nov_learn_procedure);
+
+
+    /* Reinforcement transitioning to novel test phase */
+    var reinforcment_to_nov_test = {
+        type: 'audio-button-response',
+        stimulus: 'sound/reinforcement_fr_BeauTravail.mp3',
+        choices: ['YES'],
+        button_html: '<img src = "img/TeacherOwl.jpg" width = "90%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"></img>',
+        response_ends_trial: false,
+        trial_ends_after_audio: true,
+        post_trial_gap: 300
+    };
+    timeline.push(reinforcment_to_nov_test);
+
+    
+    /* Prepare stimuli for novel test trial -- 
+    the position of the objects are pseudorandomized to ensure an equal number of clicks on each size */
+    var eng_nov_test_stimuli_block2 = [
+            {eng_nov_test_audio1_block2:"sound/test_blicket.mp3", eng_nov_test_audio2_block2:"sound/test_blicket_5s.mp3", eng_nov_test_choices_block2:["Blicket_Puismenne_Kina","Tulver_Donquete_Pifa"], button_correct: "Blicket_Puismenne_Kina"},
+            {eng_nov_test_audio1_block2:"sound/test_tulver.mp3", eng_nov_test_audio2_block2:"sound/test_tulver_5s.mp3", eng_nov_test_choices_block2:["Tulver_Donquete_Pifa","Blicket_Puismenne_Kina"], button_correct: "Tulver_Donquete_Pifa"},
+            {eng_nov_test_audio1_block2:"sound/test_tulver.mp3", eng_nov_test_audio2_block2:"sound/test_tulver_5s.mp3", eng_nov_test_choices_block2:["Blicket_Puismenne_Kina","Tulver_Donquete_Pifa"], button_correct: "Tulver_Donquete_Pifa"},
+            {eng_nov_test_audio1_block2:"sound/test_blicket.mp3", eng_nov_test_audio2_block2:"sound/test_blicket_5s.mp3", eng_nov_test_choices_block2:["Blicket_Puismenne_Kina","Tulver_Donquete_Pifa"], button_correct: "Blicket_Puismenne_Kina"},
+            {eng_nov_test_audio1_block2:"sound/test_blicket.mp3", eng_nov_test_audio2_block2:"sound/test_blicket_5s.mp3", eng_nov_test_choices_block2:["Tulver_Donquete_Pifa","Blicket_Puismenne_Kina"], button_correct: "Blicket_Puismenne_Kina"},
+            {eng_nov_test_audio1_block2:"sound/test_tulver.mp3", eng_nov_test_audio2_block2:"sound/test_tulver_5s.mp3", eng_nov_test_choices_block2:["Blicket_Puismenne_Kina","Tulver_Donquete_Pifa"], button_correct: "Tulver_Donquete_Pifa"}
+        ]
+
+    var fr_nov_test_stimuli_block2 = [
+            {fr_nov_test_audio1_block2:"sound/test_puismenne.mp3", fr_nov_test_audio2_block2:"sound/test_puismenne_5s.mp3", fr_nov_test_choices_block2:["Tulver_Donquete_Pifa","Blicket_Puismenne_Kina"], button_correct: "Blicket_Puismenne_Kina"},
+            {fr_nov_test_audio1_block2:"sound/test_donquete.mp3", fr_nov_test_audio2_block2:"sound/test_donquete_5s.mp3", fr_nov_test_choices_block2:["Blicket_Puismenne_Kina","Tulver_Donquete_Pifa"], button_correct: "Tulver_Donquete_Pifa"},
+            {fr_nov_test_audio1_block2:"sound/test_donquete.mp3", fr_nov_test_audio2_block2:"sound/test_donquete_5s.mp3", fr_nov_test_choices_block2:["Tulver_Donquete_Pifa","Blicket_Puismenne_Kina"], button_correct: "Tulver_Donquete_Pifa"},
+            {fr_nov_test_audio1_block2:"sound/test_puismenne.mp3", fr_nov_test_audio2_block2:"sound/test_puismenne_5s.mp3", fr_nov_test_choices_block2:["Blicket_Puismenne_Kina","Tulver_Donquete_Pifa"], button_correct: "Blicket_Puismenne_Kina"},
+            {fr_nov_test_audio1_block2:"sound/test_donquete.mp3", fr_nov_test_audio2_block2:"sound/test_donquete_5s.mp3", fr_nov_test_choices_block2:["Tulver_Donquete_Pifa","Blicket_Puismenne_Kina"], button_correct: "Tulver_Donquete_Pifa"},
+            {fr_nov_test_audio1_block2:"sound/test_puismenne.mp3", fr_nov_test_audio2_block2:"sound/test_puismenne_5s.mp3", fr_nov_test_choices_block2:["Tulver_Donquete_Pifa","Blicket_Puismenne_Kina"], button_correct: "Blicket_Puismenne_Kina"}
+        ]
+
+    /* define nov_test trial */
+    var eng_nov_test_trial_block2 = {
+        type:'audio-button-response',
+        choices: jsPsych.timelineVariable('eng_nov_test_choices_block2'),
+        button_html: [
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; left: 2%;">',
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; right: 2%;">'
+        ],
+        timeline: [
+            {//audio only (no response allowed)
+                stimulus: jsPsych.timelineVariable('eng_nov_test_audio1_block2'),
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                }
+            },
+            {//response allowed and audio replayed after 5s
+                stimulus: jsPsych.timelineVariable('eng_nov_test_audio2_block2'),
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                on_start: function(trial){
+                    trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                    trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block2_nov_test"
+                    data.language = "english"
+                    data.condition = "immediate_translation"
+                    data.button_correct = jsPsych.timelineVariable('button_correct')
+                    button_number = data.response
+                    data.button_selected = data.button_choices[button_number]
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }
+        ],
+        timeline_variables: eng_nov_test_stimuli_block2
+    }
+
+    var fr_nov_test_trial_block2 = {
+        type:'audio-button-response',
+        choices: jsPsych.timelineVariable('fr_nov_test_choices_block2'),
+        button_html: [
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; left: 2%;">',
+            '<img src="img/%choice%.jpg" width = "40%", style="position: fixed; top: 8%; right: 2%;">'
+        ],
+        timeline: [
+            {//audio only (no response allowed)
+                stimulus: jsPsych.timelineVariable('fr_nov_test_audio1_block2'),
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true,
+                on_start: function(trial) {
+                        trial.data = {button_choices:trial.choices}
+                }
+            },
+            {//response allowed and audio replayed after 5s
+                stimulus: jsPsych.timelineVariable('fr_nov_test_audio2_block2'),
+                response_allowed_while_playing: true,
+                trial_duration: 10000,
+                on_start: function(trial){
+                    trial.choices = jsPsych.data.get().last(1).values()[0].button_choices
+                    trial.data = {button_choices:trial.choices}
+                },
+                on_finish: function(data){
+                    data.test_part = "block2_nov_test"
+                    data.language = "french"
+                    data.condition = "immediate_translation"
+                    data.button_correct = jsPsych.timelineVariable('button_correct')
+                    button_number = data.response
+                    data.button_selected = data.button_choices[button_number]
+                }
+            },
+            {//chime sound before next trial (300ms)
+                stimulus: 'sound/chime.mp3',
+                choices: [],
+                response_allowed_while_playing: false,
+                trial_ends_after_audio: true
+            }
+        ],
+        timeline_variables: fr_nov_test_stimuli_block2
+    }
+    
+    var nov_test_procedure_block2 = {
+        timeline: [eng_nov_test_trial_block2, fr_nov_test_trial_block2],
+        repetitions: 1
+    };
+    timeline.push(nov_test_procedure_block2);
+
+
+    /** Define thank you trial **/  
+    var thank_you_procedure = {
+        type: 'audio-button-response',
+        stimulus: 'sound/end.mp3',
+        choices: ['YES'],
+        button_html: '<img src = "img/TeacherOwl.jpg" width = "90%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"></img>',
+        prompt: "<p>Merci! Thank you!</p>",
+        response_ends_trial: false,
+        trial_ends_after_audio: true
+    };
+    timeline.push(thank_you_procedure);
+
+
+    /** Transition to survey **/
+    var transition_to_survey = {
+        type: 'html-button-response',
+        stimulus: function(){
+                    var data = jsPsych.data.get().filter({test_part:'welcome'}).last(1).values()[0];
+                    if(data.response == 0){ // if they choose "English", English questions will show on the screen
+                        return "<p>Are you ready for the parent's survey?</p>"
+                    } else {
+                        return "<p>Est-ce un bon moment pour vous pour remplir le questionnaire parental?</p>"
+                    }
+                },
+        choices: ['Yes'],
+        response_ends_trial: true,
+        response_ends_trial: true,
+        trial_duration: 120000,
+        post_trial_gap: 300 //a 300ms intertrial pause
+    };
+    timeline.push(transition_to_survey);
+
+
+    /** Survey **/
+    /* Define the 3 survey questions */
+    var parent_survey = {
+        timeline: [
+            {// Question 1: technical problems
+                type: 'html-button-response',
+                stimulus: function(){
+                    var data = jsPsych.data.get().filter({test_part:'welcome'}).last(1).values()[0];
+                    if(data.response == 0){ // if they choose "English", English questions will show on the screen
+                        return "<p>Did you encounter any technical problems?</p>"
+                    } else {
+                        return "<p>Avez-vous rencontré des difficultés techniques?</p>"
+                    }
+                },
+                choices: ['Yes','No'],
+                margin_horizontal: '50px',
+                trial_duration: 30000,
+                post_trial_gap: 300
+            },
+            {// if they choose "yes", a box will show and prompt parents to type in the details for Question 1
+                timeline: [{
+                    type: 'survey-text',
+                    questions: function(){
+                        var data = jsPsych.data.get().filter({test_part:'welcome'}).last(1).values()[0];
+                        if(data.response == 0){ // if they choose "English", English questions will show on the screen
+                            return [{prompt: "What technical problems did you encounter?"}]
+                        } else {
+                            return [{prompt: "Quels problèmes techniques avez-vous rencontrés?"}]
+                        }  
+                    }
+                }],
+                conditional_function: function(){
+                // get the data from the previous trial and check which key was pressed
+                var data_Q1 = jsPsych.data.get().last(1).values()[0];
+                    if(data_Q1.response == '0') { 
+                        return true;
+                    } else {
+                        return false; // if they choose "no", do not show the box
+                    }
+                }
+            },
+            {// Question 2: difficulty touching the screen
+                type: 'html-button-response',
+                stimulus: function(){
+                    var data = jsPsych.data.get().filter({test_part:'welcome'}).last(1).values()[0];
+                    if(data.response == 0){ // if they choose "English", English questions will show on the screen
+                        return "<p>Did your child experience difficulty touching the screen?</p>"
+                    } else {
+                        return "<p>Est-ce que votre enfant à eu des difficultés à toucher l'écran?</p>"
+                    }
+                },
+                choices: ['Yes', 'No'],
+                margin_horizontal: '50px',
+                trial_duration: 30000,
+                post_trial_gap: 300
+            },
+            {// if they choose "yes", a box will show and prompt parents to type in the details for Question 2
+                timeline: [{
+                    type: 'survey-text',
+                    questions: function(){
+                        var data = jsPsych.data.get().filter({test_part:'welcome'}).last(1).values()[0];
+                        if(data.response == 0){ // if they choose "English", English questions will show on the screen
+                            return [{prompt: "What difficulty did your child encounter when touching the screen?"}]
+                        } else {
+                            return [{prompt: "Quelles difficultés est-ce que votre enfant a éprouvées en touchant l'écran?"}]
+                        }  
+                    }
+                }],
+                conditional_function: function(){
+                // get the data from the previous trial and check which key was pressed
+                var data = jsPsych.data.get().last(1).values()[0];
+                    if(data.response == '0') {
+                        return true;
+                    } else {
+                        return false; // if they choose "no", do not show the box
+                    }
+                }
+            },
+            {// Question 3: interruptions
+                type: 'html-button-response',
+                stimulus: function(){
+                    var data = jsPsych.data.get().filter({test_part:'welcome'}).last(1).values()[0];
+                    if(data.response == 0){ // if they choose "English", English questions will show on the screen
+                        return "<p>Did anything happen and interrupt the game?</p>" + "<p>(e.g., the phone rang or messages popped up)</p>"
+                    } else {
+                        return "<p>S'est-il passé quelque chose qui a interrompu le jeu?</p>" + "<p>(Par exemple, est-ce que le téléphone a sonné ou un message est-il apparu sur l'écran?)</p>"
+                    }
+                },
+                choices: ['Yes', 'No'],
+                margin_horizontal: '50px',
+                trial_duration: 30000,
+                post_trial_gap: 300
+            },
+            {// if they choose "yes", a box will show and prompt parents to type in the details for Question 3
+                timeline: [{
+                    type: 'survey-text',
+                    questions: function(){
+                        var data = jsPsych.data.get().filter({test_part:'welcome'}).last(1).values()[0];
+                        if(data.response == 0){ // if they choose "English", English questions will show on the screen
+                            return [{prompt: "What happened and interrupted the game?"}]
+                        } else {
+                            return [{prompt: "Qu'est-ce qui a interrompu le jeu?"}]
+                        }  
+                    }
+                }],
+                conditional_function: function(){
+                // get the data from the previous trial and check which key was pressed
+                var data = jsPsych.data.get().last(1).values()[0];
+                    if(data.response == '0') {
+                        return true;
+                    } else {
+                        return false; // if they choose "no", do not show the box
+                    }
+                }
+            },
+        ],
+        on_finish: function(data){
+            var choice_selected;
+            if(data.response == 0){
+                choice_selected = "yes";
+            } else {
+                choice_selected = "no";
+            }
+            data.test_part = "parent_survey"
+            data.stimulus
+            data.button_selected = choice_selected
+        }
+    };
+
+    /* Define the survey procedure */
+    var survey_procedure = {
+        timeline: [parent_survey],
+        conditional_function: function(){
+            // get the data from the previous trial
+            var data = jsPsych.data.get().last(1).values()[0];
+            if(data.rt == null){
+                return false; // skip the survey if no repsonse is made to the question "Are you ready for the parent's survey?"
+            } else {
+                return true; // otherwise, continue with the survey
+            }
+        }
+    };
+    timeline.push(survey_procedure)
+
+
+    /** End **/
+    var ending = {
+        type: 'html-button-response',
+        stimulus: "<p>Thank you!</p>",
+        choices: [],
+        trial_duration: 1000
+    };
+    timeline.push(ending);
+
+
+    /** Exit fullscreen mode **/
+    timeline.push({
+    type: 'fullscreen',
+        fullscreen_mode: false
+    });
+
+    
+//    /** finish connection with pavlovia.org **/
+//    var pavlovia_finish = {
+//        type: "pavlovia",
+//        command: "finish"
+//    };
+//    timeline.push(pavlovia_finish);
+
+
+    /** Start the experiment **/
+    jsPsych.init({
+         timeline: timeline,
+         experiment_width: 600,
+         use_webaudio: true
+    });
+
+  </script>
+
+</html>
