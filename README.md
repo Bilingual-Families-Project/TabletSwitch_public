@@ -11,7 +11,17 @@ Demo of the experiment testing English-French word-learning performance in the _
 (Note that your browser window will go to fullscreen. Click Esc if you would like to leave fullscreen mode).
 
 ## experiment_orders
-
+Repository for the four different test orders (4 orders per site, so there are 8 versions in total).
+* English_French
+  - en_ol: _"English first, one-language-at-a-time first"_ condition
+  - en_it: _"English first, immediate-translation first"_ condition
+  - fr_ol: _"French first, one-language-at-a-time first"_ condition
+  - fr_it: _"French first, immediate-translation first"_ condition
+* English_Spanish
+  - en_ol: _"English first, one-language-at-a-time first"_ condition
+  - en_it: _"English first, immediate-translation first"_ condition
+  - fr_ol: _"Spanish first, one-language-at-a-time first"_ condition
+  - fr_it: _"Spanish first, immediate-translation first"_ condition
 
 ## stimuli_audio
 Repository containing the audio stimuli used in the experiment.
