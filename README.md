@@ -12,6 +12,7 @@ Demo of the experiment testing English-French word-learning performance in the _
 
 ## experiment_orders
 Repository for the four different test orders (4 orders per site, so there are 8 versions in total).
+* Pseudo-randomization list
 * English_French
   - en_ol: _"English first, one-language-at-a-time first"_ condition
   - en_it: _"English first, immediate-translation first"_ condition
