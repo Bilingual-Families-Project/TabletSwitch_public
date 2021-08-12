@@ -1,0 +1,257 @@
+---
+title: "TabletSwitch_analysis"
+author: "Bilingual Families Project Team"
+date: "8/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(here)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(forcats)
+library(patchwork)
+library(lme4)
+library(lmerTest)
+```
+
+# read in data
+```{r}
+## read in all data in the folder
+merged_data <- do.call(rbind,
+                      lapply(list.files(here("data"), full.names = TRUE), 
+                             function(x) transform(read.csv(x), filename = basename(x)))) # append filename as a column
+```
+
+# clean data frame
+```{r}
+merged_data_clean <- merged_data %>%
+  # remove where trial_index = 0 (that's the trial to launch Pavlovia, so it's not relevant)
+  filter(trial_index != 0) %>%
+  # clean "subject_id" variable
+  mutate(subject_id = str_sub(subject_id, start = 16, end = -3), # rename to keep only subj no.
+         subject_id = na_if(subject_id, "")) %>% # then recode blank cells with NA
+  fill(subject_id, .direction = "down") %>% # auto-fill "subject_id"
+  # create "test_order" and "lang_comm" columns from "filename"
+  mutate(test_order = str_sub(filename, start = 11, end = 15),
+         lang_comm = str_sub(filename, start = 1, end = 9)) %>%
+  # create "block" variable & recode values of "test_part" variable
+  mutate(block = case_when(test_part == "fam_test" ~ "familiar",
+                           TRUE ~ str_sub(test_part, start = 1, end = 6)),
+         test_part = case_when(test_part != "fam_test" ~ str_sub(test_part, start = 8, end = -1),
+                               TRUE ~ as.character(test_part))) %>%
+  # keep only relevant columns
+  select(subject_id, lang_comm, test_order, trial_index, block, test_part, language, 
+         condition, stimulus, response, button_correct, button_selected, rt) %>%
+  # keep only relevant trials (eliminate trials which play audio stimuli and allow no response to be made)
+  filter(test_part != "" & test_part != "welcome") %>% 
+  # code correct/incorrect trials
+  ## recode rt "null" to "NA" & if rt = NA (i.e., no response is made), then change "response" & "button_selected" to "NA"  
+  mutate(rt = na_if(rt, "null"),
+         response = if_else(is.na(rt), NA_character_, response),
+         button_selected = if_else(is.na(rt), NA_character_, button_selected)) %>%
+  ## for fam_test & nov_test trials, give a score of 1 if button_select = button_correct
+  ## for nov_learn, give a score of 1 if the child did make a response (no response-time is marked if child didn't make response)
+  ## for parent_survey, give NA since an accuracy score does not make sense
+  mutate(accuracy = case_when(is.na(rt) ~ NA_real_,
+                              button_correct == button_selected & !is.na(rt) ~ 1,
+                              test_part == "nov_learn" & !is.na(rt) ~ 1,
+                              test_part == "survey" ~ NA_real_,
+                              TRUE ~ 0)) %>% # otherwise, a score of 0 (i.e., button_correct != button_selected)
+  # clean parent's survey responses
+  ## keep only "response" values for "survey" part
+  mutate(response = if_else(test_part == "survey", response, "")) %>%
+  ## recode "response": replacing "1" with "no" (*this is in relation to the position of button on the screen, 1 = the right button and "no" is always on the right)
+  mutate(response = if_else(response == "1", "no", response)) %>%
+  ## combine "button_selected" and "response" to the same row (if "yes" was clicked for any of the question, parents were asked to type response in the next trial; here, we are combining the two trials so that both the "button_selected" and "response" will appear on the same row)
+  mutate(response = na_if(response, 0), # change "0" to NA to prepare for the fill function
+         stimulus = na_if(stimulus, "")) %>% # change "" to NA to prepare for the fill function
+  fill(stimulus, .direction = "down") %>% # add the stimulus question to the trial where parents typed the response if they clicked "yes"
+  fill(response, .direction = "up") %>% # add the response parent typed to the previous trial where parents clicked "yes"
+  group_by(subject_id, test_part) %>%
+  filter(if (test_part == "survey") duplicated(stimulus) == FALSE 
+         else TRUE) %>% # remove the duplicated row
+  # reassign trial number 
+  group_by(subject_id, block, test_part, condition) %>%
+  mutate(trial_index = row_number(subject_id)) %>% # auto-fill trial from 1 to 60
+  ungroup() 
+  
+```
+
+# check exclusion criteria
+```{r}
+## Language proficiency based on familiar phase
+check_language_proficiency <- merged_data_clean %>%
+  # check familiar phase result
+  filter(test_part == "fam_test") %>%
+  group_by(subject_id, language) %>%
+  summarize(total_acc_fam = sum(accuracy, na.rm = T)) %>%
+  # to wide format
+  pivot_wider(names_from = language, values_from = total_acc_fam) %>%
+  # flag those subject_id who did not get 5 trials correct out of the 6 trials in each language during the familiar word phase
+  mutate(exclude_fam_proficiency = 
+           if_else(english < 5 & !is.na(english) | french < 5 & !is.na(french) | spanish < 5 & !is.na(spanish), 1, 0))
+
+## Parent's survey
+parent <- merged_data_clean %>%
+  # keep only test_part "parent's survey"
+  filter(test_part == "survey") %>%
+  # keep relevant columns
+  select(subject_id, lang_comm, stimulus, response) %>%
+  # reassign trial number for the 3 questions
+  group_by(subject_id) %>%
+  mutate(trial_index = row_number(subject_id)) %>% # auto-fill trial from 1 to 3
+  # add brief question title
+  mutate(question = case_when(trial_index == 1 ~ "technical_problems",
+                              trial_index == 2 ~ "difficulty_touching_screen",
+                              trial_index == 3 ~ "interrupted")) %>%
+  # to wide format
+  pivot_wider(c(subject_id, question, response), names_from = question, values_from = response)
+
+```
+
+# analysis
+## Individual data
+```{r}
+# proportion of accuracy per individual participant
+individual <- merged_data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  group_by(test_order, lang_comm, subject_id, condition) %>% # add age?
+  summarize(n_trial = n(),
+            mean_propAccuracy = sum(accuracy, na.rm = T)/n_trial) %>%
+  select(-n_trial) %>%
+  pivot_wider(names_from = "condition", values_from = "mean_propAccuracy") %>%
+#  arrange(age) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+write.csv(individual, "individual_result.csv", row.names=F)
+
+# proportion of accuracy per individual participant by language
+individual_language <- merged_data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  group_by(test_order, lang_comm, subject_id, condition, language) %>% #add age?
+  summarize(n_trial = n(),
+            mean_propAccuracy = sum(accuracy, na.rm = T)/n_trial) %>%
+  select(-n_trial) %>%
+  pivot_wider(names_from = "condition", values_from = "mean_propAccuracy") %>%
+#  arrange(age) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+write.csv(individual_language, "individual_language_result.csv", row.names=F)
+
+
+# plot proportion of accuracy per individual participant
+ind_plot <- individual %>% 
+  pivot_longer(c(familiar, immediate_translation, one_language_at_a_time),
+                            names_to = "condition", values_to = "mean_propAccuracy") %>%
+#  mutate(age = as.factor(age)) %>%
+  ggplot(aes(y = mean_propAccuracy,  x = subject_id, fill = condition)) +
+  facet_grid(test_order ~ condition) +
+  geom_bar(stat="identity", position="dodge") + 
+  coord_flip() +
+  theme_minimal() +
+  theme(text = element_text(size=12),
+        legend.position="bottom") +
+  labs(title = "Individual plot")
+
+
+# plot proportion of accuracy per individual participant by language
+ind_plot_by_language <- individual_language %>% 
+  pivot_longer(c(familiar, immediate_translation, one_language_at_a_time),
+                            names_to = "condition", values_to = "mean_propAccuracy") %>%
+#  mutate(age = as.factor(age)) %>%
+  ggplot(aes(y = mean_propAccuracy,  x = subject_id, fill = condition)) +
+  facet_grid(language ~ condition) +
+  geom_bar(stat="identity", position="dodge") + 
+  coord_flip() +
+  theme_minimal() +
+  theme(panel.spacing.y = unit(1, "lines"),
+        text = element_text(size=12)) +
+  labs(title = "Individual plot")
+
+```
+
+## Descriptive statistics
+```{r}
+mean_prop_by_condition <- merged_data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  group_by(subject_id, condition) %>% # add age?
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  group_by(lang_comm, condition) %>%
+  summarize(n_subj = n_distinct(subject_id),
+            mean_propAccuracy = mean(prop_accuracy, na.rm = T),
+            sd_propAccuracy = sd(prop_accuracy, na.rm = T),
+            min_propAccuracy = min(prop_accuracy, na.rm = T),
+            max_propAccuracy = max(prop_accuracy, na.rm = T)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+
+write.csv(mean_prop, "mean_prop_by_condition.csv", row.names=F)
+
+mean_prop_by_order <- merged_data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  group_by(subject_id, condition) %>% # add age?
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  group_by(lang_comm, test_order, condition) %>%
+  summarize(n_subj = n_distinct(subject_id),
+            mean_propAccuracy = mean(prop_accuracy, na.rm = T),
+            sd_propAccuracy = sd(prop_accuracy, na.rm = T),
+            min_propAccuracy = min(prop_accuracy, na.rm = T),
+            max_propAccuracy = max(prop_accuracy, na.rm = T)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+
+mean_prop_language <- merged_data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  group_by(subject_id, condition, language) %>% # add age?
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  group_by(lang_comm, test_order, condition, language) %>%
+  summarize(n_subj = n_distinct(subject_id),
+            mean_propAccuracy = mean(prop_accuracy, na.rm = T),
+            sd_propAccuracy = sd(prop_accuracy, na.rm = T),
+            min_propAccuracy = min(prop_accuracy, na.rm = T),
+            max_propAccuracy = max(prop_accuracy, na.rm = T)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+
+
+# Plot
+plot_mean_prop <- mean_prop_by_condition %>%
+  ggplot(aes(x = lang_comm, y = mean_propAccuracy, fill = condition)) +
+  geom_bar(stat="identity", position="dodge") + 
+  theme_minimal() +
+  theme(panel.spacing.y = unit(1, "lines"),
+        text = element_text(size=12)) +
+  labs(title = "Mean proportion of accuracy by condition")
+
+```
+
+## Quick statistics
+```{r}
+model <- merged_data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  glmer(accuracy ~ condition * lang_comm + (condition |subject_id) + (1|stimulus), family = binomial, data = .)
+
+summary(model)
+
+```
