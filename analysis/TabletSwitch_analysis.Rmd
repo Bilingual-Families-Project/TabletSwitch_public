@@ -129,7 +129,7 @@ individual <- merged_data_clean %>%
 #  arrange(age) %>%
   mutate(across(is.numeric, ~ round(., 2)))
 
-write.csv(individual, "individual_result.csv", row.names=F)
+write.csv(individual, "output/individual_result.csv", row.names=F)
 
 # proportion of accuracy per individual participant by language
 individual_language <- merged_data_clean %>%
@@ -145,7 +145,7 @@ individual_language <- merged_data_clean %>%
 #  arrange(age) %>%
   mutate(across(is.numeric, ~ round(., 2)))
 
-write.csv(individual_language, "individual_language_result.csv", row.names=F)
+write.csv(individual_language, "output/individual_language_result.csv", row.names=F)
 
 
 # plot proportion of accuracy per individual participant
@@ -197,7 +197,7 @@ mean_prop_by_condition <- merged_data_clean %>%
             max_propAccuracy = max(prop_accuracy, na.rm = T)) %>%
   mutate_if(is.numeric, round, digits = 2) 
 
-write.csv(mean_prop, "mean_prop_by_condition.csv", row.names=F)
+write.csv(mean_prop_by_condition, "output/mean_prop_by_condition.csv", row.names=F)
 
 mean_prop_by_order <- merged_data_clean %>%
   # exclude trials where no response was made
@@ -234,12 +234,17 @@ mean_prop_language <- merged_data_clean %>%
 
 # Plot
 plot_mean_prop <- mean_prop_by_condition %>%
+  mutate(lang_comm = recode(lang_comm,
+                            Concordia = "Concordia (n=29)",
+                            Princeton ="Princeton (n=4)")) %>%
   ggplot(aes(x = lang_comm, y = mean_propAccuracy, fill = condition)) +
   geom_bar(stat="identity", position="dodge") + 
   theme_minimal() +
   theme(panel.spacing.y = unit(1, "lines"),
         text = element_text(size=12)) +
   labs(title = "Mean proportion of accuracy by condition")
+
+ggsave("output/plot_mean_prop.png", plot_mean_prop, width = 8, height = 6)
 
 ```
 
