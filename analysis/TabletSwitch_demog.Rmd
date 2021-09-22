@@ -255,5 +255,5 @@ exclusion_LEQ <- combined_LEQ %>%
          comprehension_proficiency_eng, comprehension_proficiency_fr, comprehension_proficiency_sp, proficiency_level)
 
 # save the exclusion data
-write.csv(exclusion_LEQ, here("output/exclusion_LEQ.csv"))
+write.csv(exclusion_LEQ, here("output/exclusion_LEQ.csv"), row.names=F)
 ```
