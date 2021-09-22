@@ -239,11 +239,11 @@ exclusion_LEQ <- combined_LEQ %>%
   # add new exclusion variables
   mutate(
     ## preterm
-    preterm = case_when(born_at_how_many_weeks < 37 ~ 1,
+    exclude_preterm = case_when(born_at_how_many_weeks < 37 ~ 1,
                         TRUE ~ 0), # 1 = preterm and to be exclude; 0 = fullterm
     ## vision, hearing, or language problems
-    exclusion_disability = if_else(disability == "Yes" | disability == "Oui", 1, 0),
-    exclusion_health = if_else(health_problem == "Yes" | health_problem == "Oui", 1, 0),
+    exclude_disability = if_else(disability == "Yes" | disability == "Oui", 1, 0),
+    exclude_health = if_else(health_problem == "Yes" | health_problem == "Oui", 1, 0),
     ## proficiency level (if both languages are >= 7/10, then high; if one language is < 7/10, then low)
     proficiency_level = case_when(
       comprehension_proficiency_eng >= 7 & comprehension_proficiency_fr >= 7 | comprehension_proficiency_eng >= 7 & comprehension_proficiency_sp >= 7 ~ "high",
@@ -251,7 +251,7 @@ exclusion_LEQ <- combined_LEQ %>%
       )
     )  %>%
   # keep only relevant variables
-  select(subject_id, preterm, exclusion_disability, exclusion_health, 
+  select(subject_id, exclude_preterm, exclude_disability, exclude_health, 
          comprehension_proficiency_eng, comprehension_proficiency_fr, comprehension_proficiency_sp, proficiency_level)
 
 # save the exclusion data
