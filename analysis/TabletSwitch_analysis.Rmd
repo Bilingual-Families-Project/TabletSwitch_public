@@ -19,10 +19,14 @@ library(lmerTest)
 
 # read in data
 ```{r}
-## read in all data in the folder
+## read in all test data in the folder
 merged_data <- do.call(rbind,
                       lapply(list.files(here("data"), full.names = TRUE), 
                              function(x) transform(read.csv(x), filename = basename(x)))) # append filename as a column
+
+## read in LEQ exclusion data
+exclusion_LEQ <- read.csv(here("output/exclusion_LEQ.csv")) %>%
+  distinct(subject_id, .keep_all = TRUE)
 ```
 
 # clean data frame
@@ -80,19 +84,35 @@ merged_data_clean <- merged_data %>%
   
 ```
 
+# merge with exclusion LEQ data
+```{r}
+merged_data_clean <- left_join(merged_data_clean, exclusion_LEQ)
+```
+
 # check exclusion criteria
 ```{r}
-## Language proficiency based on familiar phase
+## Language proficiency based on comprehension proficiency and familiar-phase accuracy
 check_language_proficiency <- merged_data_clean %>%
   # check familiar phase result
   filter(test_part == "fam_test") %>%
-  group_by(subject_id, language) %>%
+  group_by(subject_id, language, comprehension_proficiency_eng, comprehension_proficiency_fr, comprehension_proficiency_sp, proficiency_level) %>%
   summarize(total_acc_fam = sum(accuracy, na.rm = T)) %>%
   # to wide format
   pivot_wider(names_from = language, values_from = total_acc_fam) %>%
-  # flag those subject_id who did not get 5 trials correct out of the 6 trials in each language during the familiar word phase
-  mutate(exclude_fam_proficiency = 
-           if_else(english < 5 & !is.na(english) | french < 5 & !is.na(french) | spanish < 5 & !is.na(spanish), 1, 0))
+  mutate(
+    # flag those subject_id who did not get 5 trials correct out of the 6 trials in each language during the familiar word phase
+    exclude_fam_proficiency = 
+           if_else(english < 5 & !is.na(english) | french < 5 & !is.na(french) | spanish < 5 & !is.na(spanish), "low_familiar", "high_familiar"),
+    # flag those subject_id who doesn't fulfil the lannguage proficiency criteria (> 5/6 correct in familiar test & >7/10 in comprehension proficiency)
+    exclude_lang_proficiency = case_when(comprehension_proficiency_eng < 7 & english < 5 ~ 1,
+                                         comprehension_proficiency_fr < 7 & french < 5 ~ 1,
+                                         comprehension_proficiency_sp < 7 & spanish < 5 ~ 1,
+                                         TRUE ~ 0)
+    )
+
+exclude_proficiency <- check_language_proficiency %>%
+  filter(exclude_lang_proficiency == 1) %>%
+  select(subject_id)
 
 ## Parent's survey
 parent <- merged_data_clean %>%
@@ -109,6 +129,13 @@ parent <- merged_data_clean %>%
                               trial_index == 3 ~ "interrupted")) %>%
   # to wide format
   pivot_wider(c(subject_id, question, response), names_from = question, values_from = response)
+
+## exclude preterm & language proficiency
+merged_data_clean <- merged_data_clean %>%
+  # exclude preterm
+  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>%
+  # exclude those who doesn't fit the language proficiency criteria
+  anti_join(exclude_proficiency, by = "subject_id")
 
 ```
 
@@ -199,6 +226,27 @@ mean_prop_by_condition <- merged_data_clean %>%
 
 write.csv(mean_prop_by_condition, "output/mean_prop_by_condition.csv", row.names=F)
 
+
+mean_prop_by_condition_proficiency <- merged_data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  group_by(subject_id, condition, proficiency_level) %>% # add age?
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  left_join(check_language_proficiency) %>%
+  group_by(lang_comm, condition, proficiency_level, exclude_fam_proficiency) %>%
+  summarize(n_subj = n_distinct(subject_id),
+            mean_propAccuracy = mean(prop_accuracy, na.rm = T),
+            sd_propAccuracy = sd(prop_accuracy, na.rm = T),
+            min_propAccuracy = min(prop_accuracy, na.rm = T),
+            max_propAccuracy = max(prop_accuracy, na.rm = T)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+ 
+write.csv(mean_prop_by_condition_proficiency, "output/mean_prop_by_condition_proficiency.csv", row.names=F)
+
+
 mean_prop_by_order <- merged_data_clean %>%
   # exclude trials where no response was made
   filter(!is.na(rt)) %>%
@@ -235,16 +283,31 @@ mean_prop_language <- merged_data_clean %>%
 # Plot
 plot_mean_prop <- mean_prop_by_condition %>%
   mutate(lang_comm = recode(lang_comm,
-                            Concordia = "Concordia (n=29)",
-                            Princeton ="Princeton (n=4)")) %>%
+                            Concordia = "Concordia",
+                            Princeton ="Princeton")) %>%
   ggplot(aes(x = lang_comm, y = mean_propAccuracy, fill = condition)) +
   geom_bar(stat="identity", position="dodge") + 
   theme_minimal() +
-  theme(panel.spacing.y = unit(1, "lines"),
+  theme(panel.spacing.x = unit(2.5, "lines"),
         text = element_text(size=12)) +
-  labs(title = "Mean proportion of accuracy by condition")
+  labs(title = "Mean proportion of accuracy by condition (Concordia N=31; Princeton N=8)")
 
 ggsave("output/plot_mean_prop.png", plot_mean_prop, width = 8, height = 6)
+
+
+plot_mean_prop_proficiency <- mean_prop_by_condition_proficiency %>%
+  mutate(lang_comm = recode(lang_comm,
+                            Concordia = "Concordia",
+                            Princeton ="Princeton")) %>%
+  ggplot(aes(x = lang_comm, y = mean_propAccuracy, fill = condition)) +
+  facet_grid(. ~ proficiency_level) +
+  geom_bar(stat="identity", position="dodge") + 
+  theme_minimal() +
+  theme(panel.spacing.x = unit(2.5, "lines"),
+        text = element_text(size=12)) +
+  labs(title = "Mean proportion of accuracy by condition (Concordia N=31; Princeton N=8)")
+
+ggsave("output/plot_mean_prop_proficiency.png", plot_mean_prop_proficiency, width = 8, height = 6)
 
 ```
 
