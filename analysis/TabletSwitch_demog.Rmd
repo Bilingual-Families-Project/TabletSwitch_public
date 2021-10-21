@@ -21,6 +21,8 @@ concordia_eng_LEQ <- read.csv(here("data_LEQ/Concordia_Word-learning Survey(Eng)
 concordia_fr_LEQ <- read.csv(here("data_LEQ/Concordia_Word-learning Survey(Fr).csv"))
 
 princeton_eng_LEQ <- read.csv(here("data_LEQ/Princeton_Word-learning Survey(Eng).csv"))
+
+princeton_sp_LEQ <- read.csv(here("data_LEQ/Princeton_Word-learning Survey(Sp).csv"))
 ```
 
 # clean dataframes by renaming variables
@@ -202,11 +204,78 @@ clean_princeton_eng_LEQ <- princeton_eng_LEQ %>%
   # keep only the score in proficiency variables
   mutate_at(vars(matches("proficiency")), ~as.numeric(substr(.,1, 2))) 
 
+
+## Princeton: Spanish LEQ
+clean_princeton_sp_LEQ <- princeton_sp_LEQ %>%
+  #rename variables
+  rename(
+    subject_id = X.Cuál.es.su.ID.como.participante.,
+    filled_by = X.Cuál.es.su.relación.con.el.niño.a..que.está.participando.en.nuestro.estudio.,
+    edu_level = X.Cuál.es.el.nivel.más.alto.de.educación.que.ha.logrado.usted.,
+    which_language_with_child = X.En.la.vida.diaria...habla.más.inglés..más.español.o.ambos.igualmente.,
+    codeswitch_within_sentence = En.una.escala.del.0.al.6..por.favor..evalúe.con.que.frecuencia.usted.cambia.entre.inglés.y.español.DENTRO.DE.una.misma.frase.cuando.habla.con.su.hijo.a..,
+    codeswitch_between_sentence = En.una.escala.del.0.al.6..por.favor..evalúe.con.que.frecuencia.usted.cambia.entre.inglés.y.español.ENTRE.frases.cuando.habla.con.su.hijo.a..,
+    attend_daycare = X.Asiste.su.hijo.a..a.la.guardería.,
+    age_since_daycare = X.Si.respondió..sí..a.la.pregunta.anterior...desde.qué.edad.asiste.su.hijo.a..a.la.guardería..,
+    daycare_language = X.Qué.idiomas.hablan.en.la.guardería.,
+    #childname = What.is.your.child.s.name.,
+    gender = X.Cuál.es.el.género.de.su.hijo.a..,
+    ethnicity = X.Cuál.es.la.raza.étnia.de.su.hijo.a..,
+    fullterm = X.Nació.su.hijo.a..a.término..nacido...37.semanas.de.gestación..,
+    born_at_how_many_weeks = Si.respondió..no..a.la.pregunta.anterior..cuantas.semanas.duró.su.embarazo.,
+    disability = X.Tiene.su.hijo.a..algún.problema.de.visión.u.audición.,
+    disability_details = X.Si.respondió..sí..a.la.pregunta.anterior..por.favor..explique.el.problema.de.visión.audición.,
+    health_problem = X.Ha.tenido.su.hijo.a..alguna.lesión..enfermedad..cirugía.o.infecciones.del.oído.,
+    health_problem_details = X.Si.respondió..sí..a.la.pregunta.anterior..por.favor..explique.la.lesion.cirguía.infección.,
+    strongest_language = X.Qué.idioma.es.más.dominante.en.su.hijo.a..,
+    second_strongest_language = X.Qué.idioma.es.el.segundo.más.dominante.en.su.hijo.a..,
+    other_languages = Sabe.su.hijo.a..algún.otro.idioma...Si.respondió..sí..a.la.pregunta..por.favor..enumérelos.en.el.apartado.inferior..empezando.por.el.idioma.más.dominante..,
+    daily_exposure_eng = En.un.día.típico..actualmente...qué.porcentaje.de.las.palabras.que.su.hijo.a..escucha.son.en.inglés.,
+    daily_exposure_sp = En.un.día.típico..actualmente...qué.porcentaje.de.las.palabras.que.su.hijo.a..escucha.son.en.español.,
+    daily_exposure_other = En.un.día.típico..actualmente...qué.porcentaje.de.las.palabras.que.su.hijo.a..escucha.son.en.otro.idioma.,
+    global_exposure_eng = Si.usted.piensa.en.toda.la.vida.de.su.hijo.a...qué.porcentaje.de.las.palabras.que.su.hijo.a..ha.escuchado.son.en.inglés.,
+    global_exposure_sp = Si.usted.piensa.en.toda.la.vida.de.su.hijo.a...qué.porcentaje.de.las.palabras.que.su.hijo.a..ha.escuchado.son.en.español.,
+    global_exposure_other = Si.usted.piensa.en.toda.la.vida.de.su.hijo.a....qué.porcentaje.de.las.palabras.que.su.hijo.a..ha.escuchado.son.en.otro.idioma.,
+    age_of_acquisition_eng = X.A.qué.edad.empezó.su.hijo.a..a.aprender.inglés...ponga.0.si.inglés.es.su.idioma.nativo.desde.el.nacimiento.,
+    speaking_proficiency_eng = En.una.escala.del.0.al.10..por.favor..elija.el.nivel.de.competencia.que.tiene.su.hijo.a..hablando.inglés..,
+    comprehension_proficiency_eng = En.una.escala.del.0.al.10..por.favor..elija.el.nivel.de.competencia.de.su.hijo.a..entendiendo.a.una.persona.hablando.inglés..,
+    age_of_acquisition_sp = X.A.qué.edad.empezó.su.hijo.a..a.aprender.español...ponga.0.si.español.es.su.idioma.nativo.desde.el.nacimiento.,
+    speaking_proficiency_sp = En.una.escala.del.0.al.10..por.favor..elija.el.nivel.de.competencia.de.su.hijo.a..hablando.español..,
+    comprehension_proficiency_sp = En.una.escala.del.0.al.10..por.favor..elija.el.nivel.de.competencia.de.su.hijo.a..entendiendo.a.una.persona.hablando.español..,
+    other_language1 = X.Sabe.su.hijo.a..otro.idioma.,
+    other_language1_details = X.Qué.idioma.es.,
+    age_of_acquisition_other1 = X.A.qué.edad.empezó.su.hijo.a..a.aprender.este.idioma...ponga.0.si.es.su.idioma.nativo.desde.el.nacimiento.,
+    speaking_proficiency_other1 = En.una.escala.de.0.al.10..por.favor..elija.el.nivel.de.la.competencia.de.su.hijo.a..hablando.este.idioma.., 
+    comprehension_proficiency_other1 = En.una.escala.del.0.al.10..por.favor..elija.el.nivel.de.competencia.de.su.hijo.a..entendiendo.a.una.persona.hablando.este.idioma..,
+    other_language2 = X.Sabe.su.hijo.a..otro.idioma..1,
+    other_language2_details = X.Qué.idioma.es..1,
+    age_of_acquisition_other2 = X.A.qué.edad.empezó.su.hijo.a..a.aprender.este.idioma...ponga.0.si.es.su.idioma.nativo.desde.el.nacimiento..1,
+    speaking_proficiency_other2 = En.una.escala.del.0.al.10..por.favor..elija.el.nivel.de.competencia.de.su.hijo.a..hablando.este.idioma..,
+    comprehension_proficiency_other2 = En.una.escala.de.0.al.10..por.favor..elija.el.nivel.de.competencia.de.su.hijo.a..entendiendo.a.una.persona.hablando.este.idioma..,
+    remarks = X.Hay.algo.más.que.debamos.saber.sobre.el.entorno.lingüístico.infantil.de.su.hijo.a...los.idiomas.que.conoce.o.a.los.que.está.expuesto.
+    ) %>%
+  rename_with(~str_replace(., "X.Tiene.su.hijo.a..otros.cuidadores.principales.", "other_caregivers")) %>%
+  rename_with(~str_replace(., "X..Cuál.es.la.relación.del.cuidador.con.su.hijo.a....p..ej..madre..padre..tía..abuelo..niñera..", "additional_caregiver")) %>%
+  rename_with(~str_replace(., "X.Cuál.es.el.nivel.de.educación.más.alto.logrado.por.esta.persona.", "additional_caregiver_edu_level")) %>%
+  rename_with(~str_replace(., "X.En.la.vida.diaria...habla.esta.persona.más.inglés..más.español.o.ambos.igualmente.con.su.hijo.a..", "additional_caregiver_which_language_with_child")) %>%
+  rename_with(~str_replace(., "En.una.escala.del.0.al.6..por.favor..evalúe.con.que.frecuencia.esta.persona.cambia.entre.inglés.y.español.DENTRO.DE.una.misma.frase.cuando.habla.con.su.hijo.a..", "additional_caregiver_codeswitch_within_sentence")) %>%
+  rename_with(~str_replace(., "En.una.escala.del.0.al.6..por.favor..evalúe.con.que.frecuencia.esta.persona.cambia.entre.inglés.y.español.ENTRE.frases.cuando.habla.con.su.hijo.a..", "additional_caregiver_codeswitch_between_sentence")) %>%
+  # keep only the score in proficiency variables
+  mutate_at(vars(matches("proficiency")), ~as.numeric(substr(.,1, 2))) %>%
+  rename(additional_caregiver_which_language_with_child.2 = additional_caregiver_which_language_with_child.1, 
+         additional_caregiver_which_language_with_child.1 = X.En.la.vida.diaria...habla.esta.persona.más.inglés..más.español.o.ambos.igualmente..cuando.habla.con.su.hijo.a..,
+         additional_caregiver.2 = X..Cuál.es.la.relación.del.cuidador.a.su.hijo.a....p..ej..madre..padre..tía..abuelo..niñera..) %>%
+  # correct parent's response
+  mutate_at(vars(matches("age_of_acquisition")), funs(ifelse(. == "Desde que nacio", 0, .))) %>%
+  mutate_at(vars(matches("age_of_acquisition")), ~as.numeric(substr(.,1, 2)))
+
 ```
 
 # merge all datasets 
 ```{r}
 concordia_LEQ <- full_join(clean_concordia_eng_LEQ, clean_concordia_fr_LEQ)
+
+princeton_LEQ <- full_join(clean_princeton_eng_LEQ, clean_princeton_sp_LEQ)
 
 combined_LEQ <- full_join(concordia_LEQ, clean_princeton_eng_LEQ)
 ```
@@ -221,12 +290,12 @@ combined_LEQ %>%
 # vision, hearing, or language problems? (checked and can keep all of them for now)
 combined_LEQ %>%
   select(subject_id, disability, disability_details) %>%
-  filter(disability == "Yes" | disability == "Oui")
+  filter(disability == "Yes" | disability == "Oui" | disability == "Sí")
 
 # health problem? (checked and can keep all of them for now)
 combined_LEQ %>%
   select(subject_id, health_problem, health_problem_details) %>%
-  filter(health_problem == "Yes" | health_problem == "Oui")
+  filter(health_problem == "Yes" | health_problem == "Oui" | health_problem == "Sí")
 
 # Comprehension proficiency
 check <- combined_LEQ %>%
@@ -242,8 +311,8 @@ exclusion_LEQ <- combined_LEQ %>%
     exclude_preterm = case_when(born_at_how_many_weeks < 37 ~ 1,
                         TRUE ~ 0), # 1 = preterm and to be exclude; 0 = fullterm
     ## vision, hearing, or language problems
-    exclude_disability = if_else(disability == "Yes" | disability == "Oui", 1, 0),
-    exclude_health = if_else(health_problem == "Yes" | health_problem == "Oui", 1, 0),
+    exclude_disability = if_else(disability == "Yes" | disability == "Oui" | disability == "Sí", 1, 0),
+    exclude_health = if_else(health_problem == "Yes" | health_problem == "Oui" | health_problem == "Sí", 1, 0),
     ## proficiency level (if both languages are >= 7/10, then high; if one language is < 7/10, then low)
     proficiency_level = case_when(
       comprehension_proficiency_eng >= 7 & comprehension_proficiency_fr >= 7 | comprehension_proficiency_eng >= 7 & comprehension_proficiency_sp >= 7 ~ "high",

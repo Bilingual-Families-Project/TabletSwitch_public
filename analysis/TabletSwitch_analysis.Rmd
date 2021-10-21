@@ -112,7 +112,7 @@ check_language_proficiency <- merged_data_clean %>%
 
 exclude_proficiency <- check_language_proficiency %>%
   filter(exclude_lang_proficiency == 1) %>%
-  select(subject_id)
+  select(subject_id, matches("comprehension"), english, french, spanish) # return 1 participant
 
 ## Parent's survey
 parent <- merged_data_clean %>%
@@ -133,9 +133,9 @@ parent <- merged_data_clean %>%
 ## exclude preterm & language proficiency
 merged_data_clean <- merged_data_clean %>%
   # exclude preterm
-  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>%
+  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>% # no preterm child in the data
   # exclude those who doesn't fit the language proficiency criteria
-  anti_join(exclude_proficiency, by = "subject_id")
+  anti_join(exclude_proficiency, by = "subject_id") # this excludes 1 participant
 
 ```
 
@@ -290,7 +290,7 @@ plot_mean_prop <- mean_prop_by_condition %>%
   theme_minimal() +
   theme(panel.spacing.x = unit(2.5, "lines"),
         text = element_text(size=12)) +
-  labs(title = "Mean proportion of accuracy by condition (Concordia N=31; Princeton N=8)")
+  labs(title = "Mean proportion of accuracy by condition (Concordia N=32; Princeton N=13)")
 
 ggsave("output/plot_mean_prop.png", plot_mean_prop, width = 8, height = 6)
 
@@ -305,7 +305,7 @@ plot_mean_prop_proficiency <- mean_prop_by_condition_proficiency %>%
   theme_minimal() +
   theme(panel.spacing.x = unit(2.5, "lines"),
         text = element_text(size=12)) +
-  labs(title = "Mean proportion of accuracy by condition (Concordia N=31; Princeton N=8)")
+  labs(title = "Mean proportion of accuracy by condition (Concordia N=32; Princeton N=13)")
 
 ggsave("output/plot_mean_prop_proficiency.png", plot_mean_prop_proficiency, width = 8, height = 6)
 
