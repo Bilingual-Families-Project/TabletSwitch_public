@@ -36,6 +36,8 @@ merged_data_clean <- merged_data %>%
   filter(trial_index != 0) %>%
   # clean "subject_id" variable
   mutate(subject_id = str_sub(subject_id, start = 16, end = -3), # rename to keep only subj no.
+         subject_id = str_to_upper(subject_id), # change all subject_id to uppercase
+         subject_id = str_replace_all(subject_id, pattern = "[\\ \\[\\]]", replacement = ""), # remove bkank space or brackets
          subject_id = na_if(subject_id, "")) %>% # then recode blank cells with NA
   fill(subject_id, .direction = "down") %>% # auto-fill "subject_id"
   # create "test_order" and "lang_comm" columns from "filename"
@@ -91,6 +93,11 @@ merged_data_clean <- left_join(merged_data_clean, exclusion_LEQ)
 
 # check exclusion criteria
 ```{r}
+## Missing LEQ?
+na_LEQ <- merged_data_clean %>%
+  filter_at(vars(matches("comprehension")), all_vars(is.na(.))) %>%
+  distinct(subject_id)
+
 ## Language proficiency based on comprehension proficiency and familiar-phase accuracy
 check_language_proficiency <- merged_data_clean %>%
   # check familiar phase result

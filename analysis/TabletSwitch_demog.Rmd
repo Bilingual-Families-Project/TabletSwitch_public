@@ -84,8 +84,9 @@ clean_concordia_eng_LEQ <- concordia_eng_LEQ %>%
   rename_with(~str_replace(., "On.a.scale.from.0.to.6...please.rate.how.often.this.person.switches.between.English.and.French.BETWEEN.SENTENCES.when.interacting.with.your.child.", "additional_caregiver_codeswitch_between_sentence")) %>%
   # keep only the score in proficiency variables
   mutate_at(vars(matches("proficiency")), ~as.numeric(substr(., 1, 2))) %>%
-  # change daily_exposure_other to a numeric variable
-  mutate(daily_exposure_other = extract_numeric(daily_exposure_other))
+  # keep only the integers in exposure variables
+  mutate_at(vars(matches("exposure")), ~extract_numeric(.))
+
 
 ## Concordia: French LEQ
 clean_concordia_fr_LEQ <- concordia_fr_LEQ %>%
@@ -143,7 +144,10 @@ clean_concordia_fr_LEQ <- concordia_fr_LEQ %>%
   rename_with(~str_replace(., "Sur.une.échelle.de.0.à.6...veuillez.évaluer.la.fréquence.à.laquelle.cette.personne.interchange.entre.l.anglais.et.le.français.DANS.UNE.MÊME.PHRASE.lorsque.qu.elle.intéragit.avec.votre.enfant..", "additional_caregiver_codeswitch_within_sentence")) %>%
   rename_with(~str_replace(., "Sur.une.échelle.de.0.à.6..veuillez.évaluer.la.fréquence.à.laquelle.cette.personne.interchange.entre.l.anglais.et.le.français.D.UNE.PHRASE.À.L.AUTRE.lorsqu.elle.intéragit.avec.votre.enfant..", "additional_caregiver_codeswitch_between_sentence")) %>%
   # keep only the score in proficiency variables
-  mutate_at(vars(matches("proficiency")), ~as.numeric(substr(.,1, 2))) 
+  mutate_at(vars(matches("proficiency")), ~as.numeric(substr(.,1, 2))) %>%
+  # keep only the integers in exposure variables
+  mutate_at(vars(matches("exposure")), ~extract_numeric(.))
+
 
 
 ## Princeton: English LEQ
@@ -202,7 +206,9 @@ clean_princeton_eng_LEQ <- princeton_eng_LEQ %>%
   rename_with(~str_replace(., "On.a.scale.from.0.to.6...please.rate.how.often.this.person.switches.between.English.and.Spanish.WITHIN.A.SENTENCE.when.interacting.with.your.child.", "additional_caregiver_codeswitch_within_sentence")) %>%
   rename_with(~str_replace(., "On.a.scale.from.0.to.6...please.rate.how.often.this.person.switches.between.English.and.Spanish.BETWEEN.SENTENCES.when.interacting.with.your.child.", "additional_caregiver_codeswitch_between_sentence")) %>%
   # keep only the score in proficiency variables
-  mutate_at(vars(matches("proficiency")), ~as.numeric(substr(.,1, 2))) 
+  mutate_at(vars(matches("proficiency")), ~as.numeric(substr(.,1, 2))) %>%
+  # keep only the integers in exposure variables
+  mutate_at(vars(matches("exposure")), ~extract_numeric(.))
 
 
 ## Princeton: Spanish LEQ
@@ -260,11 +266,13 @@ clean_princeton_sp_LEQ <- princeton_sp_LEQ %>%
   rename_with(~str_replace(., "X.En.la.vida.diaria...habla.esta.persona.más.inglés..más.español.o.ambos.igualmente.con.su.hijo.a..", "additional_caregiver_which_language_with_child")) %>%
   rename_with(~str_replace(., "En.una.escala.del.0.al.6..por.favor..evalúe.con.que.frecuencia.esta.persona.cambia.entre.inglés.y.español.DENTRO.DE.una.misma.frase.cuando.habla.con.su.hijo.a..", "additional_caregiver_codeswitch_within_sentence")) %>%
   rename_with(~str_replace(., "En.una.escala.del.0.al.6..por.favor..evalúe.con.que.frecuencia.esta.persona.cambia.entre.inglés.y.español.ENTRE.frases.cuando.habla.con.su.hijo.a..", "additional_caregiver_codeswitch_between_sentence")) %>%
-  # keep only the score in proficiency variables
-  mutate_at(vars(matches("proficiency")), ~as.numeric(substr(.,1, 2))) %>%
   rename(additional_caregiver_which_language_with_child.2 = additional_caregiver_which_language_with_child.1, 
          additional_caregiver_which_language_with_child.1 = X.En.la.vida.diaria...habla.esta.persona.más.inglés..más.español.o.ambos.igualmente..cuando.habla.con.su.hijo.a..,
          additional_caregiver.2 = X..Cuál.es.la.relación.del.cuidador.a.su.hijo.a....p..ej..madre..padre..tía..abuelo..niñera..) %>%
+  # keep only the score in proficiency variables
+  mutate_at(vars(matches("proficiency")), ~as.numeric(substr(.,1, 2))) %>%
+  # keep only the integers in exposure variables
+  mutate_at(vars(matches("exposure")), ~extract_numeric(.)) %>%
   # correct parent's response
   mutate_at(vars(matches("age_of_acquisition")), funs(ifelse(. == "Desde que nacio", 0, .))) %>%
   mutate_at(vars(matches("age_of_acquisition")), ~as.numeric(substr(.,1, 2)))
@@ -278,6 +286,14 @@ concordia_LEQ <- full_join(clean_concordia_eng_LEQ, clean_concordia_fr_LEQ)
 princeton_LEQ <- full_join(clean_princeton_eng_LEQ, clean_princeton_sp_LEQ)
 
 combined_LEQ <- full_join(concordia_LEQ, clean_princeton_eng_LEQ)
+```
+
+# format subject_id
+```{r}
+combined_LEQ <- combined_LEQ %>%
+  mutate(subject_id = str_to_upper(subject_id), # change all subject_id to uppercase
+         subject_id = str_replace_all(subject_id, pattern = "[\\ \\[\\]]", replacement = "")) # remove bkank space or brackets
+
 ```
 
 # check exclusion criteria
