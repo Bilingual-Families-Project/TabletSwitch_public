@@ -86,6 +86,22 @@ merged_data_clean <- merged_data %>%
   
 ```
 
+# merge with DOB info
+```{r}
+concordia_DOB <- read.csv(here("Concordia_Subject_Log_TabletSwitch.csv")) %>%
+  select(StudyID, matches("DO")) %>%
+  rename(subject_id = StudyID, 
+         date_of_birth = "DOB..yyyy.mm.dd.",
+         date_of_test = "DOT..yyyy.mm.dd.") %>%
+  mutate(date_of_birth = as.Date(date_of_birth, format = '%Y-%m-%d'),
+         date_of_test = as.Date(date_of_test, format = '%Y-%m-%d')) %>%
+  # calculate age
+  mutate(age_in_days = as.numeric(date_of_test - date_of_birth),
+         age_in_months = as.numeric((date_of_test - date_of_birth)/((365.25/12))))
+
+merged_data_clean <- left_join(merged_data_clean, concordia_DOB)
+```
+
 # merge with exclusion LEQ data
 ```{r}
 merged_data_clean <- left_join(merged_data_clean, exclusion_LEQ)
@@ -96,6 +112,21 @@ merged_data_clean <- left_join(merged_data_clean, exclusion_LEQ)
 ## Missing LEQ?
 na_LEQ <- merged_data_clean %>%
   filter_at(vars(matches("comprehension")), all_vars(is.na(.))) %>%
+  distinct(subject_id)
+
+## preterm? (n= 4)
+merged_data_clean %>%
+  filter(exclude_preterm == 1) %>%
+  distinct(subject_id)
+
+## disability
+merged_data_clean %>%
+  filter(exclude_disability == 1) %>%
+  distinct(subject_id)
+
+## health
+merged_data_clean %>%
+  filter(exclude_health == 1) %>%
   distinct(subject_id)
 
 ## Language proficiency based on comprehension proficiency and familiar-phase accuracy
@@ -119,7 +150,7 @@ check_language_proficiency <- merged_data_clean %>%
 
 exclude_proficiency <- check_language_proficiency %>%
   filter(exclude_lang_proficiency == 1) %>%
-  select(subject_id, matches("comprehension"), english, french, spanish) # return 1 participant
+  select(subject_id, matches("comprehension"), english, french, spanish) # return 2 participant
 
 ## Parent's survey
 parent <- merged_data_clean %>%
@@ -140,10 +171,159 @@ parent <- merged_data_clean %>%
 ## exclude preterm & language proficiency
 merged_data_clean <- merged_data_clean %>%
   # exclude preterm
-  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>% # no preterm child in the data
+  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>% # this excludes 4 participants
   # exclude those who doesn't fit the language proficiency criteria
-  anti_join(exclude_proficiency, by = "subject_id") # this excludes 1 participant
+  anti_join(exclude_proficiency, by = "subject_id") %>% # this excludes 2 participant
+  # exclude missing proficiency data
+  filter(subject_id != "S51") %>% # no proficiency information about French
+  # exclude speech/language problem
+  filter(subject_id != "S35") # parent reported a slight language delay
 
+```
+
+# demographics
+## number of final participants
+```{r}
+### Total
+merged_data_clean %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  nrow()
+
+### By gender
+merged_data_clean %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(gender) %>%
+  summarize(n = length(subject_id))
+
+### By language community
+merged_data_clean %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm) %>%
+  summarize(n = length(subject_id))
+```
+
+## Mean age
+```{r}
+merged_data_clean %>% 
+  group_by(lang_comm) %>%
+  summarize(mean_age_months = mean(age_in_months, na.rm =T),
+            min_age_months = min(age_in_months, na.rm =T),
+            max_age_months = max(age_in_months, na.rm =T))
+```
+
+## Exposure
+```{r}
+merged_data_clean %>%
+  distinct(subject_id, .keep_all = T) %>%
+  summarize(mean_exp_eng = mean(global_exposure_eng, na.rm = T),
+            mean_exp_fr = mean(global_exposure_fr, na.rm = T),
+            mean_exp_sp = mean(global_exposure_sp, na.rm = T),
+            mean_exp_other = mean(global_exposure_other, na.rm = T),
+            min_exp_eng = min(global_exposure_eng, na.rm = T),
+            min_exp_fr = min(global_exposure_fr, na.rm = T),
+            min_exp_sp = min(global_exposure_sp, na.rm = T),
+            min_exp_other = min(global_exposure_other, na.rm = T),
+            max_exp_eng = max(global_exposure_eng, na.rm = T),
+            max_exp_fr = max(global_exposure_fr, na.rm = T),
+            max_exp_sp = max(global_exposure_sp, na.rm = T),
+            max_exp_other = max(global_exposure_other, na.rm = T))
+```
+
+## Proficiency
+```{r}
+### Those with equal proficiency across the two languages
+equal_proficiency <- merged_data_clean %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng == comprehension_proficiency_fr | comprehension_proficiency_eng == comprehension_proficiency_sp) %>%
+  summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T))
+
+### Dominant in English
+dominant_eng_proficiency <- merged_data_clean %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng > comprehension_proficiency_fr | comprehension_proficiency_eng > comprehension_proficiency_sp) %>%
+  summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T))
+
+### Dominant in French
+dominant_fr_proficiency <- merged_data_clean %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng < comprehension_proficiency_fr) %>%
+  summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T))
+
+### Dominant in Spanish
+dominant_sp_proficiency <- merged_data_clean %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng < comprehension_proficiency_sp) %>%
+  summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T))
+```
+
+## Maternal education
+```{r}
+merged_data_clean %>%
+  select(subject_id, edu_level) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  mutate(college_grad = case_when(edu_level == "Bachelor’s Degree" | edu_level == "Master’s Degree" | edu_level == "Doctoral Degree" ~ 1,
+                                  edu_level == "Baccalauréat" | edu_level == "Maîtrise" ~ 1,
+                                  TRUE ~ 0),
+         n = length(subject_id)) %>%
+  select(college_grad, n) %>%
+  group_by(college_grad) %>%
+  mutate(n_group = length(college_grad),
+         percent_group = n_group/n * 100) %>%
+  distinct(college_grad, .keep_all = T)
 ```
 
 # analysis
@@ -294,10 +474,12 @@ plot_mean_prop <- mean_prop_by_condition %>%
                             Princeton ="Princeton")) %>%
   ggplot(aes(x = lang_comm, y = mean_propAccuracy, fill = condition)) +
   geom_bar(stat="identity", position="dodge") + 
+  geom_errorbar(aes(ymin = mean_propAccuracy - sd_propAccuracy, ymax = mean_propAccuracy + sd_propAccuracy), width=.2,
+                 position = position_dodge(.9)) +
   theme_minimal() +
   theme(panel.spacing.x = unit(2.5, "lines"),
         text = element_text(size=12)) +
-  labs(title = "Mean proportion of accuracy by condition (Concordia N=32; Princeton N=13)")
+  labs(title = "Mean proportion of accuracy by condition (Concordia N=32; Princeton N=15)")
 
 ggsave("output/plot_mean_prop.png", plot_mean_prop, width = 8, height = 6)
 
@@ -312,7 +494,7 @@ plot_mean_prop_proficiency <- mean_prop_by_condition_proficiency %>%
   theme_minimal() +
   theme(panel.spacing.x = unit(2.5, "lines"),
         text = element_text(size=12)) +
-  labs(title = "Mean proportion of accuracy by condition (Concordia N=32; Princeton N=13)")
+  labs(title = "Mean proportion of accuracy by condition (Concordia N=32; Princeton N=15)")
 
 ggsave("output/plot_mean_prop_proficiency.png", plot_mean_prop_proficiency, width = 8, height = 6)
 

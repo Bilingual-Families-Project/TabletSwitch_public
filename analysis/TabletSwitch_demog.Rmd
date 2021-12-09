@@ -336,7 +336,8 @@ exclusion_LEQ <- combined_LEQ %>%
       )
     )  %>%
   # keep only relevant variables
-  select(subject_id, exclude_preterm, exclude_disability, exclude_health, 
+  select(subject_id, gender, edu_level, matches("global"),
+         exclude_preterm, exclude_disability, exclude_health, 
          comprehension_proficiency_eng, comprehension_proficiency_fr, comprehension_proficiency_sp, proficiency_level)
 
 # save the exclusion data
