@@ -1,0 +1,793 @@
+---
+title: "Patterns of language switching and bilingual children’s word learning: An experiment across two communities"
+shorttitle: "Tablet Switch"
+
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage[labelformat=empty]{caption}
+  - \usepackage{caption}
+  - \usepackage[extra]{tipa}
+  - \renewcommand{\topfraction}{1}
+  - \renewcommand{\bottomfraction}{1}
+  - \renewcommand{\textfraction}{.1}
+  - \renewcommand{\floatpagefraction}{1}
+  - \setcounter{topnumber}{9}
+  - \setcounter{bottomnumber}{9}
+  - \setcounter{totalnumber}{20}
+  - \setcounter{dbltopnumber}{9}
+  - |
+      \makeatletter
+      \renewcommand{\paragraph}{\@startsection{paragraph}{4}{\parindent}%
+        {0\baselineskip \@plus 0.2ex \@minus 0.2ex}%
+        {-1em}%
+        {\normalfont\normalsize\bfseries\typesectitle}}
+    
+      \renewcommand{\subparagraph}[1]{\@startsection{subparagraph}{5}{1em}%
+        {0\baselineskip \@plus 0.2ex \@minus 0.2ex}%
+        {-\z@\relax}%
+        {\normalfont\normalsize\bfseries\itshape\hspace{\parindent}{#1}\textit{\addperi}}{\relax}}
+      \makeatother
+
+csl               : "`r system.file('rmd', 'apa7.csl', package = 'papaja')`"
+documentclass     : "apa7"
+output            : papaja::apa6_pdf  # change to apa6_docx for word document
+
+author: 
+  - name          : "Rachel Ka-Ying Tsui"
+    affiliation   : "1"
+    email         : "rachelkytsui@gmail.com"
+    corresponding : yes
+    address       : "Department of Psychology, 7141 Sherbrooke St. West, Montreal, QC, Canada, H2T1V2. Rachel Ka-Ying Tsui is now at Laboratory for Language Development, RIKEN Center for Brain Science, 2-1 Hirosawa, Wako-shi, Saitama, Japan, 351-0198. Email: rachelkytsui@gmail.com. Experiment material, analysis scripts, data set, and supplemental materials are available at https://osf.io/8vk3b/."
+  - name          : "Jessica E. Kosie"
+    affiliation   : "2" 
+    email         : "jkosie@princeton.edu"
+  - name          : "Laia Fibla"
+    affiliation   : "1"
+    email         : "laia.fiblareixachs@concordia.ca"
+  - name          : "Casey Lew-Williams"
+    affiliation   : "2"
+    email         : "caseylw@princeton.edu"
+  - name          : "Krista Byers-Heinlein"
+    affiliation   : "1" 
+    email         : "k.byers@concordia.ca"
+
+affiliation:
+  - id            : "1"
+    institution   : "Concordia University"
+  - id            : "2"
+    institution   : "Princeton University"
+
+abstract: |
+  Language switching is common in bilingual environments, including those of many bilingual children. Some bilingual children hear rapid switching that involves immediate translation of words (an _‘immediate-translation’_ pattern), while others hear their languages most often in long blocks of a single language (a _‘one-language-at-a-time’_ pattern). Our two-site experimental study compared two groups of developing bilinguals from different communities, and investigated whether differences in the timing of language switching impose different demands on bilingual children’ learning of novel nouns in their two languages: do children learn differently if they hear a translation immediately vs. if they hear translations more separated in time? Using an at-home online tablet word learning task, data were collected asynchronously from 3- to 5-year-old bilinguals from French–English bilingual families in Montreal, Canada (N = 31) and Spanish–English bilingual families in New Jersey, USA (N = 22). Results showed that bilingual children in both communities readily learned new words, and their performance was similar across the _immediate-translation_ and _one-language-at-a-time_ conditions. Our findings highlight that different types of bilingual interactions can provide equal learning opportunities for bilingual children’s vocabulary development.
+ 
+
+keywords          : "bilingualism, word learning, children, code-mixing, language switching"
+
+wordcount         : 
+
+floatsintext      : yes
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+lineno            : yes
+mask              : no # "yes" to omit identifying information from the title page
+
+bibliography      : ["TabletSwitch_paper_references.bib"]
+replace_ampersands: yes
+
+citation_package  : biblatex
+nocite: '@*' # include all the references in the .bib file, because in-text citations were mostly typed manually to fit the apa7 style
+---
+
+\captionsetup[table]{labelformat=empty}
+
+```{r setup, include=FALSE, cache=TRUE}
+#remotes::install_github("crsh/papaja@devel")
+
+library(rmarkdown)
+library(knitr)
+library(papaja)
+library(kableExtra)
+library(english)
+library(linguisticsdown)
+library(here)
+library(tidyverse)
+library(tidylog)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(forcats)
+library(patchwork)
+library(lme4)
+library(lmerTest)
+library(ggplot2)
+library(patchwork)
+library(gridExtra)
+library("ggpubr")
+library(broom)
+library(DHARMa)
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, cache = TRUE)
+```
+
+```{r load_data, cache = TRUE}
+data_clean <- read.csv(here("analysis/data_clean.csv"))
+```
+
+Many children around the world grow up in bilingual environments. For example, 18-25% of children in Canada (Schott et al., 2022) and more than 33% of children in the United States (Migration Policy Institute, 2021) grow up learning two or more languages. Caregivers often have concerns about supporting bilingual development (Quirk et al., 2022), but lack resources and information to guide their decisions (Ahooja et al., 2022). One question caregivers face is how to introduce new words so that children learn them in both languages. Should they switch between languages to provide immediate translations, or use one language at a time? To help address this question, this study examined how 3- to 5-year-old bilinguals from two communities — French–English learners in Montreal and Spanish–English learners in New Jersey — acquire new words across both of their languages in different language switching contexts.
+
+## Caregivers’ language switching
+Bilingual speakers have the ability to switch between two languages in their conversations (Myers-Scotton, 2017; Poplack, 1980), including families raising bilingual children (Byers-Heinlein, 2013; Kremin et al., 2021a). For example, at snack time, a French–English bilingual caregiver may say “One more? _C’est le dernier._ [It’s the last one.]” (example from Kremin et al., 2021a). Over time, bilingual children may accumulate many exposures to switches between languages (De Houwer, 2007; Kosie et al., in preparation). All bilingual caregivers in one study switched languages at least once during a short free-play session with their children, although there were large individual differences in the amount of switching (Bail et al., 2005). Interestingly, caregivers’ attitudes towards multilingualism may also contribute to how often they switch between languages during caregiver-child interactions. For example, caregivers raising bilingual children in Quebec, Canada may switch less between languages if they have a less positive attitude towards childhood multilingualism (Kircher et al., 2022). Yet, bilingual children would still likely be exposed to language switches across different social contexts in their daily lives (Kosie et al., in preparation). For example, even when caregivers do not switch languages when interacting directly with their children, it is very common for them to do so with other people in the presence of their children (Carbajal & Peperkamp, 2020), which may be a common source of exposure to language switching for children. 
+
+A particularly common moment for caregivers to switch between their languages is when teaching bilingual children new words. Some bilingual caregivers provide an immediate translation to their bilingual children when introducing new words (i.e., an _‘immediate-translation’_ strategy) (Bail et al., 2015; Kremin et al., 2021a); for example, a Spanish–English caregiver may say “Do you see that dog? _Un perro!_”. Other bilingual caregivers interact with their children in long bouts using a single language (i.e., a _‘one-language-at-a-time’_ strategy); for example, a French–English caregiver may use only English when reading books together with their child but use French for the rest of their day so that their child would hear the word “dog” during storytime and hear _“chien”_ at other times. These two common styles of exposing bilingual children to words are also manifested in formats of bilingual children’s books (Ahooja et al., 2022), in which texts from two languages may be separated or blocked or the two languages may be interwoven in the same text (Brouillard et al., 2022; Read et al., 2021; Thibeault & Matheson. 2020). Some bilingual caregivers may use these bilingual books as a resource to support their child’s bilingual word learning (Benitez et al., 2022). 
+
+The way that bilingual caregivers switch between languages when interacting with their children may also depend on the context of the bilingual community they belong to. Bilinguals in different communities have different language attitudes and practices and, as a result, may code-switch differently (Poplack, 1988; Gardner-Chloros et al., 2005; Lawson & Sachdev, 2000). Previous research has shown that, when interacting with their children, Spanish–English bilingual caregivers in the United States switch languages more often than French–English bilingual caregivers in Montreal, Canada (Bail et al., 2015; Kremin et al., 2021a), although these studies used different approaches (i.e. a structured play session versus a day-long at-home audio recording) to measure the frequency of switching. Nonetheless, the status of languages in society or the goals and values of different bilingual communities may impact language switching practices. For the case of Spanish–English bilinguals in the United States, Spanish is an immigrant heritage language that is often given minimal support in social structures (such as public education) and is often at risk of not being used by young learners (De Houwer, 2007). Frequent language switching between Spanish and English may therefore serve as a tool to better establish social identity in Spanish–English bilinguals and also maintain the use of their heritage language in an English-dominant society (Montes-Alcalá, 2000; Toribio, 2002). On the other hand, although use of both French and English is quite normalized in Montreal Canada, bilinguals may switch less often for the reason that it may be perceived as relatively less polite (Buoy & Nicoladis, 2018). Given that different communities inevitably vary in typical patterns of language switching, bilingual children growing up in these communities may have different experiences with language switching when they are learning words across their two languages.
+
+## Language switching and children’s word learning
+Given its prevalence in speech directed to bilingual children, it is important to consider potential effects of language switching on language development. Early theories posited that switching between languages could confuse bilingual children (Grammont, 1902; Ronjat 1913; see Fennell & Lew-Williams, 2017). While subsequent theorists de-emphasized concerns about language confusion, there is evidence that language mixing and switching may be challenging for infants’ learning. For example, language switching leads to momentary processing costs, where some types of code-switched sentences may be more difficult to process than single-language sentences (Byers-Heinlein et al., 2017; Morini & Newman, 2019; Potter et al., 2019). It has also been reported that bilingual children who hear frequent switching in their language input have smaller vocabularies (Byers-Heinlein, 2013; Carbajal & Peperkamp, 2020). 
+
+Yet, other studies show that language switching might in fact support language learning. In one study, 18- to 24-month-old bilingual children whose caregivers often switched languages within sentences were found to have larger vocabulary sizes (Bail, 2015). In another study, bilingual children exposed to more frequent language mixing were also more successful in segmenting words in both languages (Orena & Polka, 2019). Other studies reported no relationship between children’s experiences hearing language mixing and their vocabulary development (Place & Hoff, 2011). Moreover, language switching does not necessarily cause a processing cost. For example, in one study, bilingual children could similarly identify target nouns in single-language sentences and in sentences with several switched words (Kremin et al., 2021b). Finally, there is evidence from home language recordings that bilingual caregivers may code-switch in a way that aims to support their children’s learning (Kremin et al., 2021a). Together, these results are supported by the general observation that bilingual children who have been exposed to frequent language switching do successfully learn their two languages (Bail et al., 2015; De Houwer, 2007). 
+
+## The current study
+The current study aimed to further our understanding of bilingual children’s word learning in the context of language switches, with the ultimate goal of informing caregivers about how different bilingual strategies might affect language acquisition. Using an at-home word learning task implemented on touchscreen devices, we investigated whether differences in the timing of language switching impose different demands on bilingual children’s learning of novel nouns in their two languages: do children learn differently if they hear a translation immediately vs. if they hear translations more separated in time? We also examined whether children’s learning ability in these conditions would vary across different bilingual communities by comparing learners from Spanish–English learners in New Jersey and French–English learners in Montreal. 
+
+# Methods
+Ethics approval was obtained from the Concordia University Human Research Ethics Board (Certification #10000439) and the Princeton University Behavioral Research Ethics Board (Certification #7117). Informed consent was obtained from caregivers prior to their children’s participation in the study. Data collection started in July 2021 at both locations and concluded in October 2021 in Montreal, Canada and August 2022 in New Jersey, USA, and thus occurred during the COVID-19 pandemic. The experiment was preregistered and all materials and analysis are available at https://osf.io/8vk3b/. 
+
+## Participants
+```{r include=FALSE, cache=TRUE}
+# ---------- check exclusion ----------
+## missing LEQ info
+data_clean %>% 
+  filter(missing_LEQ == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## preterm
+data_clean %>% 
+  filter(exclude_preterm == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## reported speech or language problem
+data_clean %>% 
+  filter(exclude_language_problem == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## not completing the experiment
+data_clean %>% 
+  filter(exclude_incomplete == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## parent reported having technical issues during the experiment
+data_clean %>% 
+  filter(exclude_parent == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## Language proficiency criteria
+### Note a deviation from the preregistration: Our pre-registration stated that we would only include children who met both of two stringent proficiency criteria: at least 7/10 reported comprehension score in each of their languages and an accuracy of at least 5/6 familiar word trials in each language. However, we deviated from the pre-registered exclusion criteria, and included children if they met either or both of these criteria (e.g., a child with a proficiency of 8/10 and a 4/6 on familiar word trials would have been excluded based on our pre-registration, but was included in the analyses reported here).
+exclude_proficiency <- data_clean %>%
+  # check familiar phase result
+  filter(test_part == "fam_test") %>%
+  group_by(subject_id, language, comprehension_proficiency_eng, comprehension_proficiency_fr, comprehension_proficiency_sp) %>%
+  dplyr::summarize(total_acc_fam = sum(accuracy, na.rm = T)) %>% ## calculate number of correct familiar word trials per language
+  # to wide format
+  pivot_wider(names_from = language, values_from = total_acc_fam) %>%
+  mutate(
+    # flag those who did not get 5 trials correct out of the 6 trials in each language during the familiar word phase
+    exclude_fam_proficiency = 
+      if_else(english < 5 & !is.na(english) | french < 5 & !is.na(french) | spanish < 5 & !is.na(spanish), 1, 0),
+    # flag those who did not get 7/10 in comprehension proficiency
+    exclude_comp_proficiency =
+      if_else(comprehension_proficiency_eng < 7 & !is.na(comprehension_proficiency_eng) | 
+              comprehension_proficiency_fr < 7 & !is.na(comprehension_proficiency_fr) | 
+              comprehension_proficiency_sp < 7 & !is.na(comprehension_proficiency_sp), 1, 0)) %>%
+  # identify which participants did not meet the language proficiency criteria
+  filter_at(vars(exclude_fam_proficiency, exclude_comp_proficiency), all_vars(. == 1)) %>%
+  ungroup()
+
+# ---------- exclude these participants ----------
+data_clean <- data_clean %>%
+  # exclude participant with incomplete data
+  filter(exclude_incomplete != 1) %>% ## this excludes 1 participant 
+  # exclude preterm
+  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>% ## this excludes n = 4
+  # exclude speech/language problem
+  filter(exclude_language_problem != 1) %>% ## thid excludes n = 0, as the participant has been eliminated in the previous command
+  # exclude those who doesn't fit the language proficiency criteria
+  anti_join(exclude_proficiency, by = "subject_id") %>% ## this excludes n = 3
+  # exclude parent-reported technical difficulty
+  filter(exclude_parent != 1) ## this excludes n = 1
+
+# ---------- Demographics ----------
+## number of final participants
+### Total (n = 53)
+data_clean %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  nrow()
+
+### By gender
+data_clean %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(gender) %>%
+  count()
+
+### By language community
+data_clean %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm) %>%
+  count()
+
+## Mean age
+mean_age <- data_clean %>% 
+  group_by(lang_comm) %>%
+  dplyr::summarize(mean_age_years = mean(age_in_years, na.rm =T),
+            sd_age_years = sd(age_in_years, na.rm = T),
+            min_age_years = min(age_in_years, na.rm =T),
+            max_age_years = max(age_in_years, na.rm =T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+```
+
+A total of `r data_clean %>% distinct(subject_id, .keep_all = T) %>% nrow()` bilingual children aged 3 to 5 years (`r data_clean %>% distinct(subject_id, .keep_all = T) %>% filter(gender == "Female") %>% nrow()` girls) who were born full term and without any reported language problems participated in the study. Of those, `r data_clean %>% distinct(subject_id, .keep_all = T) %>% filter(lang_comm == "French-English") %>% nrow()` French–English bilingual children were tested in Montreal (Mean age = `r mean_age[1,2]` years, $SD$ = `r mean_age[1,3]`, range = `r mean_age[1,4]` – `r mean_age[1,5]`), and `r data_clean %>% distinct(subject_id, .keep_all = T) %>% filter(lang_comm == "Spanish-English") %>% nrow()` Spanish–English bilingual children were tested in New Jersey (Mean age = `r mean_age[2,2]` years, $SD$ = `r mean_age[2,3]`, range = `r mean_age[2,4]` – `r mean_age[2,5]`)[^1]. The linguistic context differs across the two sites: In Montreal both English and French are spoken widely in society and education is available in both languages; by contrast in New Jersey English is the major community language and education is largely available in English. Across both sites, bilingual children were recruited through social media advertisements and participants databases maintained by the respective labs. Another 12 children were recruited but excluded in the final sample due to not completing the experiment (n = 1), low birth weight or born preterm under 37 weeks (n = 4), below the preregistered minimum age of 36 months (n = 1), technical issues including data not being saved by the program (n = 2), one case where a caregiver explicitly mentioned that a child tended to change the response and touch the other image if the first touch was not registered by the program (n = 1), and finally, not meeting the language criteria (n = 3; see below).
+
+[^1]: We deviated from the number of participants indicated in our preregistration (i.e., 30 bilingual children per site), due to difficulty in recruiting Spanish–English bilingual children.
+
+```{r include=FALSE, cache=TRUE}
+# ---------- Proficiency descriptive stats ----------
+## Overall mean proficiency scores
+mean_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency"), matches("global_")) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+mean_proficiency 
+
+## Those with equal proficiency across the two languages
+equal_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency"), matches("global_")) %>%
+  filter(comprehension_proficiency_eng == comprehension_proficiency_fr | comprehension_proficiency_eng == comprehension_proficiency_sp) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+## Dominant in English
+dominant_eng_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng > comprehension_proficiency_fr | comprehension_proficiency_eng > comprehension_proficiency_sp) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+## Dominant in French
+dominant_fr_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng < comprehension_proficiency_fr) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+## Dominant in Spanish
+dominant_sp_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng < comprehension_proficiency_sp) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+## lm model to compare proficiency score
+proficiency_model <- data_clean %>%
+  select(subject_id, lang_comm, matches("comprehension_")) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  mutate_at(vars(-c(subject_id, lang_comm)), ~as.numeric(.)) %>%
+  mutate(comprehension_proficiency_other = case_when(!is.na(comprehension_proficiency_fr) ~ comprehension_proficiency_fr,
+                                                     !is.na(comprehension_proficiency_sp) ~ comprehension_proficiency_sp,
+                                                     TRUE ~ NA_real_)) %>%
+  select(-c(comprehension_proficiency_fr, comprehension_proficiency_sp)) %>%
+  pivot_longer(-c(subject_id, lang_comm), names_to = "language", values_to = "proficiency") %>%
+  mutate(language = recode(language,
+                           comprehension_proficiency_eng = "English",
+                           comprehension_proficiency_other = "French/Spanish")) %>%
+  lm(proficiency ~ language * lang_comm, data = .,
+     contrasts = list(language = contr.sum(2)/2,
+                      lang_comm = contr.sum(2)/2))
+  
+summary(proficiency_model)
+
+
+# ---------- Parental education level ----------
+parent_edu <- data_clean %>%
+  select(subject_id, lang_comm, parent_edu_level) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm) %>%
+  mutate(college_grad = case_when(parent_edu_level == "Bachelor’s Degree" | parent_edu_level == "Master’s Degree" | parent_edu_level == "Doctoral Degree" ~ 1,
+                                  TRUE ~ 0),
+         n = length(subject_id)) %>%
+  select(lang_comm, college_grad, n) %>%
+  group_by(lang_comm, college_grad) %>%
+  mutate(n_group = length(college_grad),
+         percent_group = round(n_group/n * 100, 0)) %>%
+  distinct(college_grad, .keep_all = T)
+```
+
+Children’s language proficiency was assessed via an online modified version of the Language Experience and Proficiency Questionnaire (LEAP-Q; Marian et al., 2007). Caregivers rated their children’s proficiency in English and French (in Montreal) or in English and Spanish (in New Jersey), relative to same-aged peers on a scale of 0 (no proficiency at all) to 10 (native proficiency). Proficiency data were available for `r data_clean %>% distinct(subject_id, .keep_all = T) %>% filter(missing_LEQ != 1) %>% nrow()` out of the `r data_clean %>% distinct(subject_id, .keep_all = T) %>% nrow()` children in the final sample (data were missing from 1 French–English and 3 Spanish–English children): `r equal_proficiency[1,2]+equal_proficiency[2,2]` children had equal comprehension proficiency in both languages (`r equal_proficiency[1,2]` French–English, `r equal_proficiency[2,2]` Spanish–English); `r dominant_eng_proficiency[1,2]+dominant_eng_proficiency[2,2]` children were more proficient in English comprehension than French/Spanish (`r dominant_eng_proficiency[1,2]` French–English, `r dominant_eng_proficiency[2,2]` Spanish–English); and `r dominant_fr_proficiency[1,1]+dominant_sp_proficiency[1,1]` children were more proficient in French/Spanish than in English (`r dominant_fr_proficiency[1,1]` French–English, `r dominant_sp_proficiency[1,1]` Spanish–English); please see the supplemental materials for the descriptive statistics of the proficiency scores. There were no significant differences in proficiency across communities. Children were included in the final sample if they had at least 7/10 reported comprehension score in each of their languages or an accuracy of at least 5/6 familiar word trials in each language[^2]. Finally, the sample was generally from a mid-to-high socioeconomic status, which was comparable across the two populations: `r parent_edu[2,5]`% of the mothers in Montreal and `r parent_edu[3,5]`% of the mothers in New Jersey had completed a university degree or higher. 
+
+[^2]: Our preregistration stated that children should meet both of these two stringent proficiency criteria to be included. However, we deviated by including children who met either one of the criteria because applying the original criteria resulted in exclusion of a higher than anticipated number of children (22 exclusions under the preregistered criteria, 3 under the new criteria) with a resulting smaller sample size and decreased statistical power. The results with the subsample meeting the more stringent preregistered criteria were similar and are reported in the supplemental materials at OSF (https://osf.io/8vk3b/).
+
+## Stimuli
+```{r Figure1, echo=FALSE, fig.cap="The four novel objects and their novel labels in English, French, and Spanish.", fig.align='center', out.width='80%', fig.pos='H'}
+
+knitr::include_graphics(here("analysis/paper/figure/figure1.jpg"))
+```
+
+Visual stimuli consisted of four distinct novel objects adapted from the Novel Object and Unusual Name (NOUN) Database (Horst & Hout, 2016). Each object was given a unique, disyllabic novel label in English, French, and Spanish (see Figure 1 for the novel label-object pairings). Each label began with a distinct onset and was phonologically legal in its respective languages, and had a stress placement following the respective language’s typical stress patterns (i.e., strong-weak stress in English and Spanish, and weak-strong stress in French). 
+
+The four novel label-object pairings were divided into two sets of two pairings, with Set 1 consisting of masculine-sounding French/Spanish labels and Set 2 of feminine-sounding French/Spanish labels, as judged by adult native speakers of each language. Set 1 was always presented in block 1 of the experiment and Set 2 in block 2. This design decision was made to avoid the possibility of not obtaining enough data for block 2 due to fatigue; however, all children did complete the experiment until the end of block 2, suggesting that the experiment was engaging to the children. With the experiment blocked by condition, which set a child saw in the two conditions depended on the block order which they were assigned to.
+
+Auditory stimuli were recorded by a female native French–English or Spanish–English bilingual speaker using child-directed speech. Each of the four novel object labels were recorded in three different carrier phrases where the labels and the carrier phrases were always in the same language (e.g., “Look, it’s a _blicket_. Touch it!”, “Here’s a _blicket_. Touch it!”, and “Touch the _blicket_!”). Parallel sets were recorded in French (e.g., “Regarde, c’est une _puismenne_. Touche ça!”, “Voici une _puismenne_. Touche ça!”, and “Touche la _puismenne_!”)[^3] and Spanish (e.g., “Mira, es una _kina_. Tócala!”, “Aquí está una _kina_. Tócala!”, and “Toca la _kina_!”). 
+
+[^3]: For the French–English recording, the phrase “Touch that”/_“Touche ça”_ was mistakenly recorded instead of “Touch it”/_“Touche el/la”_, but was retained as this difference was judged unlikely to affect children’s performance.
+
+## Procedure
+Children were tested at home asynchronously in an online tablet word-learning task. Prior to participation, caregivers gave written consent through email and were then asked to complete the LEAP-Q questionnaire rating their child’s language proficiency. They were also given a link to the online tablet task, which was created using jsPsych (de Leeuw, 2015) and hosted on Pavlovia. Figure 2 illustrates the overall procedure (a sample video of the task is also available in our OSF site: https://osf.io/8vk3b/).
+
+The task took up the full screen of the tablet and began with audio instructions provided to caregivers in their preferred language, which was unrelated to the language children would hear for the rest of the experiment. Caregivers were asked not to talk or give hints to their child, but should assist when technical difficulties occurred or repeat their child’s touch when necessary (e.g., the child’s touch was not properly registered by the device).
+
+```{r Figure2, echo=FALSE, fig.cap="Illustration of the task procedure, with blue boxes representing trials in English and yellow boxes representing trials in French or Spanish. Orders of condition and language were counterbalanced across participants.	", fig.align='center', out.width='90%', fig.pos='H'}
+
+knitr::include_graphics(here("analysis/paper/figure/figure2.jpg"))
+```
+
+To begin the task, children were greeted by an owl character who switched between the two languages (i.e., between English and French in Montreal or between English and Spanish in New Jersey) to orient children to a bilingual language mode. There were three blocks in the forced-choice word-learning task: _familiar word block, block 1 of learning and test phases, block 2 of learning and test phases._ 
+
+In the _familiar word block_, a total of 12 trials were administered to familiarize children with the testing procedure. Common nouns served as the target words to test children’s language proficiency in English and French or English and Spanish: _book, doggy, kitty, foot, cookie, nose, key, mouth, hand, chair, spoon, doll_[^4]. The 12 trials were blocked by language with half of the trials in English and half in French/Spanish, and the nouns tested differed across the two languages such that no translation equivalents were tested within children. Two pictures appeared side by side on the screen in silence for 200ms before children were prompted to touch the picture that corresponded to a target word (e.g., “Touch the _book_!”). If no response was made after 5000ms following the test sentence offset, the test sentences repeated. If the child failed to make a response within 10000ms after the offset of the initial test sentence, the experiment automatically proceeded to the next trial. There was a 300ms blank screen with a chime sound in between trials. Presentation of familiar words was pseudo-randomized within blocks to ensure an equal number of touches to each side of the screen. 
+
+[^4]: The corresponding French words were: _livre, chien, chat, pied, biscuit, nez, clé, bouche, main, chaise, cuillère, poupée_; and the corresponding Spanish words were: _libro, perro, gato, pie, galleta, naríz, llave, boca, mano, silla, cuchara, muñeca._
+
+The _learning_ and _test_ phase formed a block, and children were tested in two within-subjects conditions presented in two separate blocks: the _immediate-translation_ condition and the _one-language-at-a-time_ condition. In total, there were four test orders created by crossing order of the conditions across blocks, and the order of stimulus’ language (English first vs. French/Spanish first).
+
+In the _learning phase_, children were exposed to two novel label-object pairings six times each across a total of 12 trials. The presentation was blocked by object such that children saw one of the two novel label-object pairings in the first six trials and the other novel label-object pairing in the remaining six trials, with the order of target objects randomized across participants. Each trial presented a novel object appearing alone at one of the four corners of the screen (i.e., top right, top left, bottom right, bottom left), with the position pseudo-randomized to ensure an equal number of appearances at each corner. Similar to the procedure in the familiar word block, audio stimuli played 200ms after the trial onset and children were asked to touch the novel object with the mention of the novel label. 
+
+In the _immediate-translation_ condition, English trials and French/Spanish trials were interleaved, such that adjacent trials provided an immediate translation; whereas in the _one-language-at-a-time_ condition, labels for a particular object were blocked by language. For example, in the _immediate-translation_ condition, one child might hear the English label _“tulver”_ on trials 1/3/5, and the French label _“donquete”_ on trials 2/4/6, where both labels referred to the same object. For the same child in the _one-language-at-a-time_ condition, they might hear the English label _“gasser”_ on trials 7-9, and the French label _“cantait”_ on trials 10-12, again both referring to the same object.
+
+Responses were allowed while the audio stimulus played, but the trial ended only after the entire stimulus was played to ensure that children heard the complete novel label. If no response was made after 5000ms following the audio offset, a whistle sound played to capture children’s attention again. The task skipped to the next trial if no response was made within 10000ms upon the initial audio offset; these trials were later excluded in the analysis (see the results section below). A blank screen with a 300ms chime was played as an inter-trial interval. 
+
+The _test phase_ consisted of a total 12 trials blocked by language with half of trials in English and half in French or Spanish. Each novel label-object pairing was tested three times in each language. The trial structure was the same as in the _familiar word block_. The presentation of the target objects was pseudo-randomized to ensure an equal number of appearances on each side of the screen, and children did not receive feedback about their performance at test. 
+
+Upon the completion of Block 1, children proceeded to Block 2 which followed the same procedure as in Block 1 (e.g., learning phase followed by test phase). Finally, we verified with caregivers whether they noticed any task or technical issues.
+
+# Results
+Our analysis plan was preregistered at https://osf.io/ad7fz. Mixed-effects analyses were performed in the R statistical language (Version 4.1.3; R Core Team. 2020) using the lme4 package (Bates et al., 2015), and p-values of the models were calculated using the lmerTest package (Kuznetsova et al., 2017). In the following models, categorical variables were contrast coded such that the intercept of a model represents the mean of all data points in the data set. Post-hoc analyses were conducted through pairwise comparisons using the emmeans package (Lenth, 2022). We reported the main analysis on accuracy here in this paper; exploratory analyses are also reported in the supplemental materials at OSF (https://osf.io/8vk3b/).
+
+```{r include=FALSE, cache=TRUE}
+# ---------- Number of trials excluded ----------
+## Number of familiarization trials
+fam_trialN <- data_clean %>%
+  # exclude trials where no response was made
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test") %>%
+  count()
+
+fam_trialN_afterexclusion <- data_clean %>%
+  # exclude trials where no response was made
+  #filter(!is.na(rt)) %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test") %>%
+  count()
+
+fam_trialN - fam_trialN_afterexclusion
+
+## Number of novel test trials
+test_trialN <- data_clean %>%
+  # exclude trials where no response was made
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  count()
+
+test_trialN_afterexclusion <- data_clean %>%
+  # exclude trials where no response was made
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  count()
+
+test_trialN - test_trialN_afterexclusion
+
+## number of trials excluded from each child
+individual_trialN <- data_clean %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  # calculate number of trials to exclude
+  mutate(exclude_trial = case_when(rt > 10000 ~ 1,
+                                   is.na(rt) ~ 1,
+                                    TRUE ~ 0)) %>%  
+  group_by(subject_id) %>%
+  summarize(n_trial = length(subject_id),
+            n_trial_exclude = sum(exclude_trial),
+            percentage_exclude = n_trial_exclude/n_trial * 100)
+```
+
+## Accuracy
+Our primary dependent variable in determining bilingual children’s word learning was their accuracy in touching the labeled target object on each test trial. A score of 1 was given to a correct response and a score of 0 to an incorrect response. This type of scoring motivated the use of a logistic mixed-effects regression model. There were two predictor variables: (1) condition with two levels of _immediate-translation_ vs. _one-language-at-a-time_; and (2) language community with two levels of French–English vs. Spanish–English bilinguals[^5]. 
+
+[^5]: Our preregistered analysis plan was to include a predictor variable indicating whether the target word tested was in the children’s dominant or non-dominant language. As eight of the 31 French–English children and six of the 22 Spanish–English children were reported to have equal proficiency in both languages, in the end we did not include dominant language as a fixed effect in our models.
+
+Following our preregistration, `r fam_trialN - fam_trialN_afterexclusion` familiar word trials and `r test_trialN - test_trialN_afterexclusion` test trials were excluded where a child did not make any response, resulting in a total of `r fam_trialN_afterexclusion` valid familiar word trials and `r test_trialN_afterexclusion` valid test trials included in the analysis; no more than `r individual_trialN %>% summarize(max_n_trial_exclude = max(n_trial_exclude))` trials (`r round(individual_trialN %>% summarize(max_percentage_exclude = max(percentage_exclude)))`%) were excluded for any individual child. Separate analyses were run for the _familiar word block_ and the _test blocks_.
+
+### Familiar word block
+```{r include=FALSE, cache=TRUE}
+### Descriptive stats
+mean_prop_fam_language <- data_clean %>%
+  # exclude trials where no response was made
+  #filter(!is.na(rt)) %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test") %>%
+  group_by(subject_id, language, condition) %>% # add age?
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  group_by(lang_comm, language, condition) %>%
+  dplyr::summarize(n_subj = n_distinct(subject_id),
+            mean_propAccuracy = mean(prop_accuracy, na.rm = T),
+            sd_propAccuracy = sd(prop_accuracy, na.rm = T),
+            min_propAccuracy = min(prop_accuracy, na.rm = T),
+            max_propAccuracy = max(prop_accuracy, na.rm = T)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+```
+
+French–English bilingual children showed a mean accuracy of `r mean_prop_fam_language[1,5]` on the familiar English-word trials ($SD$ = `r mean_prop_fam_language[1,6]`; range = `r mean_prop_fam_language[1,7]` – `r mean_prop_fam_language[1,8]`) and `r mean_prop_fam_language[2,5]` on the familiar French-word trials ($SD$ = `r mean_prop_fam_language[2,6]`; range = `r mean_prop_fam_language[2,7]` – `r mean_prop_fam_language[2,8]`). Meanwhile, Spanish–English bilingual children showed a mean accuracy of `r mean_prop_fam_language[3,5]` in the familiar English-word trials ($SD$ = `r mean_prop_fam_language[3,6]`; range = `r mean_prop_fam_language[3,7]` – `r mean_prop_fam_language[3,8]`) and `r mean_prop_fam_language[4,5]` in the familiar Spanish-word trials ($SD$ = `r mean_prop_fam_language[4,6]`; range = `r mean_prop_fam_language[4,7]` – `r mean_prop_fam_language[4,8]`). 
+
+We ran a logistic mixed-effects model with proportion of accuracy in the familiar word block as the dependent variable, language (English vs. French/Spanish) and language community (French–English vs. Spanish–English) as fixed effects[^6], and random intercepts of participants and stimulus item: 
+
+accuracy ~ language * lang_community + (1|participant) + (1|item)
+
+[^6]: We had preregistered that we would enter condition as a fixed effect, which is nonsensical as there was no condition manipulation in the familiar block; language of the familiar nouns tested (i.e., English vs. French/Spanish) were entered instead.
+
+```{r include=FALSE, cache=TRUE}
+fam_acc_model <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # recode language to facilitate the model
+  mutate(language = as.factor(if_else(language == "english", "english", "other"))) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test") %>%
+  mutate(lang_comm = as.factor(lang_comm)) %>%
+  glmer(accuracy ~ language * lang_comm + (1|subject_id) + (1|stimulus), family = binomial, data = .,
+        #contrasts = list(language = c(-0.5, 0.5),
+        #                 lang_comm = c(-0.5, 0.5)),
+        contrasts = list(language = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2)) #,
+        #control=glmerControl(optimizer="bobyqa"))
+
+broom.mixed::tidy(fam_acc_model) %>%
+    mutate_if(is.numeric, round, digits = 3) 
+
+### goodness of fit
+testUniformity(fam_acc_model)
+testDispersion(fam_acc_model) 
+plotQQunif(fam_acc_model)
+
+### post-hoc
+as.data.frame(emmeans::emmeans(fam_acc_model, pairwise ~ language, transform = "response")$contrast)
+fam_posthoc <- as.data.frame(emmeans::emmeans(fam_acc_model, pairwise ~ language | lang_comm, transform = "response")[2])
+```
+
+\noindent The coefficient estimates from this model are shown in Table 1. While the effect of language community was not significant, the effect of language was significant and the interaction between language and language community approached the significance level of .05. However, post-hoc pairwise comparisons indicated that neither the French–English children nor the Spanish–English children differ significantly in their accuracy across trials in the two languages (French–English: estimate = `r round(fam_posthoc[1,3],3)`, $SE$ = `r round(fam_posthoc[1,4],2)`, $z$ = `r round(fam_posthoc[1,6],2)`, $p$ = `r round(fam_posthoc[1,7],3)`; Spanish–English: estimate = `r round(fam_posthoc[2,3],3)`, $SE$ = `r round(fam_posthoc[2,4],2)`, $z$ = `r round(fam_posthoc[2,6],2)`, $p$ = `r round(fam_posthoc[2,7],3)`). Therefore, both groups of bilingual children generally performed at ceiling and performed similarly in the familiar word block. 
+
+### Test blocks
+```{r include=FALSE, cache=TRUE}
+mean_prop_by_condition <- data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  group_by(subject_id, condition) %>% 
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  group_by(lang_comm, condition) %>%
+  dplyr::summarize(n_subj = n_distinct(subject_id),
+            mean_propAccuracy = mean(prop_accuracy, na.rm = T),
+            sd_propAccuracy = sd(prop_accuracy, na.rm = T),
+            min_propAccuracy = min(prop_accuracy, na.rm = T),
+            max_propAccuracy = max(prop_accuracy, na.rm = T),
+            se = sd_propAccuracy / sqrt(n()),
+            CI_lower = mean_propAccuracy - (1.96 * se),
+            CI_upper = mean_propAccuracy + (1.96 * se)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+```
+
+On average, French–English bilingual children showed a mean accuracy of `r mean_prop_by_condition[1,4]` in the _immediate-translation_ condition ($SD$ = `r mean_prop_by_condition[1,5]`; range = `r mean_prop_by_condition[1,6]` – `r mean_prop_by_condition[1,7]`) and `r mean_prop_by_condition[2,4]` in the _one-language-at-a-time_ condition ($SD$ = `r mean_prop_by_condition[2,5]`; range = `r mean_prop_by_condition[2,6]` – `r mean_prop_by_condition[2,7]`). On the other hand, Spanish–English bilingual children showed a mean accuracy of `r mean_prop_by_condition[3,4]` in the _immediate-translation_ condition ($SD$ = `r mean_prop_by_condition[3,5]`; range = `r mean_prop_by_condition[3,6]` – `r mean_prop_by_condition[3,7]`) and `r mean_prop_by_condition[4,4]` in the _one-language-at-a-time_ condition ($SD$ = `r mean_prop_by_condition[4,5]`; range = `r mean_prop_by_condition[4,6]` – `r mean_prop_by_condition[4,7]`). 
+
+To address our research question about whether different language switching patterns would impact bilingual children’s word learning, we ran a logistic mixed-effects model on the proportion of accuracy in the test trials, with condition and language community as fixed effects, as well as a random slope of condition by participants and a random intercept of item:
+
+accuracy ~ condition * lang_community + (1 + condition|participant) + (1|item)
+
+```{r include=FALSE, cache=TRUE}
+### glmer model
+test_acc_model <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  glmer(accuracy ~ condition * lang_comm + (1+condition|subject_id) + (1|stimulus), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2),
+        control=glmerControl(optimizer="bobyqa"))
+
+broom.mixed::tidy(test_acc_model) %>%
+    mutate_if(is.numeric, round, digits = 3) 
+
+
+### goodness of fit
+testUniformity(test_acc_model)
+testDispersion(test_acc_model) 
+plotQQunif(test_acc_model)
+
+### one-sample t-tests: comparing to at-chance level of 0.50
+#### 1. French-English in immediate-translation condition
+chance_test_FrEn_immd <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  filter(lang_comm == "French-English" & condition == "immediate_translation") %>%
+  group_by(subject_id) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+t.test(chance_test_FrEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")
+
+#### 2. French-English in one-language-at-a-time condition
+chance_test_FrEn_one_lang <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  filter(lang_comm == "French-English" & condition == "one_language_at_a_time") %>%
+  group_by(subject_id) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+t.test(chance_test_FrEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")
+
+#### 3. Spanish-English in immediate-translation condition
+chance_test_SpEn_immd <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  filter(lang_comm == "Spanish-English" & condition == "immediate_translation") %>%
+  group_by(subject_id) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+t.test(chance_test_SpEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")
+
+#### 4. Spanish-English in one-language-at-a-time condition
+chance_test_SpEn_one_lang <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  filter(lang_comm == "Spanish-English" & condition == "one_language_at_a_time") %>%
+  group_by(subject_id) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+t.test(chance_test_SpEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")
+```
+
+\noindent The coefficient estimates from this model are shown in Table 1, and Figure 3 visualizes this model. There were no significant effects or interactions. Furthermore, separate one-sample t-tests were run on the proportion of accuracy in each condition per community[^7]. These analyses confirmed that children from both communities learned the novel words in each condition significantly above the at-chance level of 0.50 (all $p$s < .001). In other words, bilingual children in both communities showed strong evidence of word learning, with no difference across the _immediate-translation_ and _one-language-at-a-time_ conditions.
+
+[^7]: The French–English bilinguals performed significantly above the at-chance level in the _immediate-translation_ condition ($t$(`r t.test(chance_test_FrEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$parameter`) = `r round(t.test(chance_test_FrEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$statistic, 2)`, $p `r papaja::printp(t.test(chance_test_FrEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$p.value)`$) and the _one-language-at-a-time_ condition ($t$(`r t.test(chance_test_FrEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$parameter`) = `r round(t.test(chance_test_FrEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$statistic, 2)`, $p `r papaja::printp(t.test(chance_test_FrEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$p.value)`$). Likewise, the Spanish–English bilinguals performed significantly above the at-chance level in the _immediate-translation_ condition ($t$(`r t.test(chance_test_SpEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$parameter`) = `r round(t.test(chance_test_SpEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$statistic, 2)`, $p `r papaja::printp(t.test(chance_test_SpEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$p.value)`$) and the _one-language-at-a-time_ condition ($t$(`r t.test(chance_test_SpEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$parameter`) = `r round(t.test(chance_test_SpEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$statistic, 2)`, $p `r papaja::printp(t.test(chance_test_SpEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$p.value)`$).
+
+```{r results = "asis", cache = TRUE, warning=FALSE, message=FALSE}
+## clean the models coefficients
+fam_acc_model_coefs <- summary(fam_acc_model)$coef %>%
+  as.data.frame %>%
+  mutate_at(c("Estimate","Std. Error", "z value", "Pr(>|z|)"), 
+            function (x) signif(x, digits = 3)) %>% 
+  rename(SE = `Std. Error`, 
+         z = `z value`,
+         p = `Pr(>|z|)`) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(fam_acc_model_coefs) <- c("Intercept", "language", "lang_community", "language * lang_community") 
+
+
+test_acc_model_coefs <- summary(test_acc_model)$coef %>%
+  as.data.frame %>%
+  mutate_at(c("Estimate","Std. Error", "z value", "Pr(>|z|)"), 
+            function (x) signif(x, digits = 2)) %>% 
+  rename(SE = `Std. Error`, 
+         z = `z value`,
+         p = `Pr(>|z|)`) %>%
+  mutate_if(is.numeric, round, digits = 2) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(test_acc_model_coefs) <- c("Intercept ", "condition", "lang_community ", "condition * lang_community") 
+
+## combine the two models into one table
+Table1 <- rbind(fam_acc_model_coefs, test_acc_model_coefs)
+
+kable(Table1,
+      format = "latex", booktabs = TRUE,
+      align=rep('c', 4), 
+      caption = "Table 1. Coefficient estimates from the logistic mixed-effects models predicting accuracy in the familiar word block and the test blocks.") %>%
+  kableExtra::kable_styling(font_size = 12) %>%
+  kableExtra::pack_rows("Familiar word block", 1, 4) %>%
+  kableExtra::pack_rows("Test blocks", 5, 8)
+```
+
+```{r Figure3, fig.align='center', fig.height=6, fig.width=6, out.width='60%', fig.cap="Average proportion of accuracy by condition and language community in the test blocks. Dots plot the data from each individual participant. Error bars indicate 95\\% confidence intervals, and the black dashed line represents the at-chance accuracy level of 0.50.", warning=FALSE, cache=TRUE}
+### Plotting prop of accuracy with individual points
+#### proportion of accuracy per individual participant
+individual_accuracy <- data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only novel test
+  filter(test_part == "nov_test") %>%
+  group_by(test_order, lang_comm, subject_id, age_in_years, age_in_months, condition) %>%
+  dplyr::summarize(n_trial = n(),
+            mean_propAccuracy = sum(accuracy, na.rm = T)/n_trial) %>%
+  select(-n_trial) %>%
+  pivot_wider(names_from = "condition", values_from = "mean_propAccuracy") %>%
+  mutate(across(is.numeric, ~ round(., 2))) %>%
+  pivot_longer(c(immediate_translation, one_language_at_a_time), names_to = "condition", values_to = "mean_propAccuracy") %>%
+  mutate(condition = recode(condition,
+                            immediate_translation = "Immediate-translation",
+                            one_language_at_a_time = "One-language-at-a-time")) 
+
+#### ggplot
+plot_test_acc_with_individuals <- mean_prop_by_condition %>% 
+  mutate(condition = recode(condition,
+                            immediate_translation = "Immediate-translation",
+                            one_language_at_a_time = "One-language-at-a-time")) %>%
+  ggplot(aes(y = mean_propAccuracy,  x = lang_comm, fill = condition, color = condition)) +
+  geom_bar(stat="identity", position=position_dodge(width=0.9), alpha = .25) + 
+  geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper), width=.2, position = position_dodge(.9), color = "#4d4d4d", alpha = 0.75) + 
+  geom_dotplot(data = individual_accuracy, aes(y = mean_propAccuracy, x = lang_comm, fill = condition), 
+               binaxis = 'y', stackdir = 'center', position = position_dodge(0.9), stackratio = 1, dotsize = 0.5, alpha = 0.8) +
+  scale_fill_manual(name = "Condition", values=c("#525252", "#bdbdbd"), drop = FALSE) +
+  scale_color_manual(name = "Condition", values=c("#525252", "#bdbdbd")) +
+  geom_hline(yintercept=0.5, linetype="dashed") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.1)) +
+  scale_x_discrete(labels = c("French–English \n (N = 31)", "Spanish–English \n (N = 22)")) +
+  theme_minimal() +
+  theme(panel.spacing.x = unit(2.5, "lines"),
+        text = element_text(size=12),
+        axis.text = element_text(size = 12, color = "black"),
+        legend.text = element_text(size = 12),
+        legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "\n Language community",
+       y = "Proportion of Accuracy",
+       fill = "Condition",
+       color = "Condition") +
+  #guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  #guides(fill = guide_legend(order = 2), color = guide_legend(order = 2)) +
+  theme(legend.box="vertical", legend.position = "bottom")
+
+plot_test_acc_with_individuals
+```
+
+
+# Discussion
+To better understand whether the dynamics of language switching affect bilingual children’s word learning, the current study compared whether children learn novel cross-language words differently if they hear a translation immediately after being named in one language or if they hear the translation more separated in time. Using an online tablet word-learning task, 3- to 5-year-old French–English and Spanish–English bilingual children showed successful learning when they encountered either type of language switch, a pattern which was similar across the two bilingual communities. Therefore, our results indicate that variation in language switching patterns does not affect word learning. Overall, our findings highlight that different patterns of language switching provide equal learning opportunities for vocabulary development among children growing up in different bilingual communities. 
+
+Children’s successful performance in this experiment suggests that their word learning is supported in environments that include regular language switching. Contrary to studies reporting that language switching is associated with less successful word learning for bilingual children (Byers-Heinlein, 2013; Carbajal & Peperkamp, 2020), our findings are in line with studies showing that language switching does not hinder but could support language learning (Bail, 2015; De Houwer, 2007; Kremin et al., 2021b; Orena & Pola, 2019). Our study was novel in using an online tablet touchscreen task, and our findings are congruent with results using bilingual book reading methods. For example, Brouillard et al. (2022) showed that 5-year-old French–English bilingual children were able to learn words in both languages and were not affected by whether languages were interleaved or blocked in the books. Similar results have also been reported in another study with Spanish–English bilingual children (Read et al., 2021), although this study tested word learning in bilingual children’s non-dominant language only. Overall, current evidence confirms that bilingual children effectively learn cross-language words in each of their two languages across different patterns of language switching.
+
+Moreover, children from both bilingual communities were equally able to learn words under different switching patterns. While previous studies have reported that bilingual caregivers inevitably show different behaviors when switching between their languages (Bail et al., 2015; Kremin et al., 2021a), our results revealed that bilingual children from different communities do not necessarily learn words differently under different language switching patterns. The lack of language community differences suggests that children’s ability to learn words in different switching contexts is unaffected by the patterns of switching they typically hear, a possibility that will need to be tested in future studies with children from a wider variety of communities.
+
+Our experiment used a highly-controlled experimental design, which gave children equal opportunities to learn words in two languages, with equal exposure to each word as well as equal information presented in both languages and across both conditions. However, this may not reflect caregivers’ everyday behaviors. While bilingual caregivers often switch languages to enhance their children’s understanding of translation equivalents in both languages (Kremin et al., 2021a), sometimes they may also switch languages when having a hard time retrieving a word from the other language in the moment (Heredia & Altarriba, 2001). Moreover, bilingual parents may generally use one of their languages more often than the other (Orena et al., 2020). Therefore, bilingual children’s exposure to words across their languages is likely to be less systematic than in our study. Previous research has shown that the amount of exposure to a specific language matters, with bilingual children often learning more words in the language to which they hear a greater amount of exposure (David & Wei, 2008; Hoff et al., 2012; Marchman et al., 2017; Pearson et al., 1993). It is possible that different frequencies of exposure to each language may interact with learning across different contexts of language switching. Future studies may consider using a less-balanced experimental design to test whether different language switching patterns (e.g., many switches from Spanish to English, but not vice-versa) would still allow bilingual children to learn cross-language words equally. 
+
+Our study was also limited to testing children’s learning from inter-sentential language switching, as in both of our conditions language switches happened across sentence boundaries where all words within a single sentence were in the same language. However, caregivers may also switch languages within a single sentence, where words from the two languages are embedded within the same sentence (e.g., a French–English bilingual caregiver may say “Look, it’s a _chien_!” to their child when they see a dog on the street). Previous research has reported that bilingual children may have difficulty processing speech that contains a within-sentence language switch, but have relatively little difficulty processing speech that contains a between-sentence switch (Byers-Heinlein et al., 2017; Morini & Newman, 2019; Potter et al., 2019). It is plausible that the language switching patterns we explored in this study could be less challenging for children to process than other types of switching. Although bilingual caregivers tend to switch more often between sentences than within sentences (Bail et al., 2015; Kremin et al., 2021a), it is still important for future studies to explore whether bilingual children’s word learning would be impacted by differences in the syntactic location of when language switches occur. 
+
+# Conclusion
+Overall, our findings provide new evidence that may ease caregivers’ concerns about how to best raise their bilingual children’s language development. Many bilingual caregivers wonder how they should introduce words in each language to their child. Our findings suggest that there are multiple ways to do so effectively, as differences in the timing of language switches do not necessarily result in different word learning outcomes. Whether bilingual children hear a translation immediately or more separated in time, either type of language switching supports and provides meaningful opportunities for word learning. Future studies that incorporate different patterns of exposure to novel words would be important to fully understand the effect of language switching patterns in early bilingual vocabulary development. Nonetheless, the main take home message from our study for bilingual caregivers is that, rather than following a strict language switching pattern, it is reasonable to interact with their children in a way that makes them comfortable, while at the same time supporting children by offering meaningful experience with each of their languages.
+
+\newpage
+
+# References
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+
+<div id = "refs"></div>
+\endgroup

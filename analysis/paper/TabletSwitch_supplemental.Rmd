@@ -1,0 +1,1694 @@
+---
+title: "Supplemental Materials"
+shorttitle: "Tablet Switch"
+
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage[labelformat=empty]{caption}
+  - \usepackage{caption}
+  - \usepackage[extra]{tipa}
+  - \renewcommand{\topfraction}{1}
+  - \renewcommand{\bottomfraction}{1}
+  - \renewcommand{\textfraction}{.1}
+  - \renewcommand{\floatpagefraction}{1}
+  - \setcounter{topnumber}{9}
+  - \setcounter{bottomnumber}{9}
+  - \setcounter{totalnumber}{20}
+  - \setcounter{dbltopnumber}{9}
+  - \renewcommand{\thefigure}{S\arabic{figure}}
+  - |
+      \makeatletter
+      \renewcommand{\paragraph}{\@startsection{paragraph}{4}{\parindent}%
+        {0\baselineskip \@plus 0.2ex \@minus 0.2ex}%
+        {-1em}%
+        {\normalfont\normalsize\bfseries\typesectitle}}
+    
+      \renewcommand{\subparagraph}[1]{\@startsection{subparagraph}{5}{1em}%
+        {0\baselineskip \@plus 0.2ex \@minus 0.2ex}%
+        {-\z@\relax}%
+        {\normalfont\normalsize\bfseries\itshape\hspace{\parindent}{#1}\textit{\addperi}}{\relax}}
+      \makeatother
+
+csl               : "`r system.file('rmd', 'apa7.csl', package = 'papaja')`"
+documentclass     : "apa7"
+output            : papaja::apa6_pdf  # change to apa6_docx for word document
+
+author: 
+  - name          : "Rachel Ka-Ying Tsui"
+    affiliation   : "1"
+    email         : "rachelkytsui@gmail.com"
+    corresponding : yes
+    address       : "Department of Psychology, 7141 Sherbrooke St. West, Montreal, QC, Canada, H2T1V2. Rachel Ka-Ying Tsui is now at Laboratory for Language Development, RIKEN Center for Brain Science, 2-1 Hirosawa, Wako-shi, Saitama, Japan, 351-0198. Email: rachelkytsui@gmail.com. Experiment material, analysis scripts, data set, and supplemental materials are available at https://osf.io/8vk3b/."
+  - name          : "Jessica E. Kosie"
+    affiliation   : "2" 
+    email         : "jkosie@princeton.edu"
+  - name          : "Laia Fibla"
+    affiliation   : "1"
+    email         : "laia.fiblareixachs@concordia.ca"
+  - name          : "Casey Lew-Williams"
+    affiliation   : "2"
+    email         : "caseylw@princeton.edu"
+  - name          : "Krista Byers-Heinlein"
+    affiliation   : "1" 
+    email         : "k.byers@concordia.ca"
+
+affiliation:
+  - id            : "1"
+    institution   : "Concordia University"
+  - id            : "2"
+    institution   : "Princeton University"
+
+abstract          : 
+keywords          :
+floatsintext      : yes
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+lineno            : yes
+mask              : no # "yes" to omit identifying information from the title page
+
+#bibliography      : ["TabletSwitch_paper_references.bib"]
+replace_ampersands: yes
+
+citation_package  : biblatex
+nocite: '@*' # include all the references in the .bib file, because in-text citations were mostly typed manually to fit the apa7 style
+---
+
+\captionsetup[table]{labelformat=empty}
+
+```{r setup, include=FALSE, cache=TRUE}
+library(rmarkdown)
+library(knitr)
+library(papaja)
+library(kableExtra)
+library(english)
+library(linguisticsdown)
+library(here)
+library(tidyverse)
+library(tidylog)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(forcats)
+library(patchwork)
+library(lme4)
+library(lmerTest)
+library(ggplot2)
+library(patchwork)
+library(gridExtra)
+library("ggpubr")
+library(broom)
+library(DHARMa)
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, cache = TRUE)
+```
+
+```{r load_data, cache = TRUE}
+data_clean <- read.csv(here("analysis/data_clean.csv"))
+```
+
+```{r include=FALSE, cache=TRUE}
+# ---------- check exclusion ----------
+## missing LEQ info
+data_clean %>% 
+  filter(missing_LEQ == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## preterm
+data_clean %>% 
+  filter(exclude_preterm == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## reported speech or language problem
+data_clean %>% 
+  filter(exclude_language_problem == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## not completing the experiment
+data_clean %>% 
+  filter(exclude_incomplete == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## parent reported having technical issues during the experiment
+data_clean %>% 
+  filter(exclude_parent == 1) %>%
+  distinct(subject_id) %>%
+  count()
+
+## Language proficiency criteria
+### Note a deviation from the preregistration: Our preregistration stated that we would only include children who met both of two stringent proficiency criteria: at least 7/10 reported comprehension score in each of their languages and an accuracy of at least 5/6 familiar word trials in each language. However, we deviated from the preregistered exclusion criteria, and included children if they met either or both of these criteria (e.g., a child with a proficiency of 8/10 and a 4/6 on familiar word trials would have been excluded based on our preregistration, but was included in the analyses reported here).
+exclude_proficiency <- data_clean %>%
+  # check familiar phase result
+  filter(test_part == "fam_test") %>%
+  group_by(subject_id, language, comprehension_proficiency_eng, comprehension_proficiency_fr, comprehension_proficiency_sp) %>%
+  dplyr::summarize(total_acc_fam = sum(accuracy, na.rm = T)) %>% ## calculate number of correct familiar word trials per language
+  # to wide format
+  pivot_wider(names_from = language, values_from = total_acc_fam) %>%
+  mutate(
+    # flag those who did not get 5 trials correct out of the 6 trials in each language during the familiar word phase
+    exclude_fam_proficiency = 
+      if_else(english < 5 & !is.na(english) | french < 5 & !is.na(french) | spanish < 5 & !is.na(spanish), 1, 0),
+    # flag those who did not get 7/10 in comprehension proficiency
+    exclude_comp_proficiency =
+      if_else(comprehension_proficiency_eng < 7 & !is.na(comprehension_proficiency_eng) | 
+              comprehension_proficiency_fr < 7 & !is.na(comprehension_proficiency_fr) | 
+              comprehension_proficiency_sp < 7 & !is.na(comprehension_proficiency_sp), 1, 0)) %>%
+  # identify which participants did not meet the language proficiency criteria
+  filter_at(vars(exclude_fam_proficiency, exclude_comp_proficiency), all_vars(. == 1)) %>%
+  ungroup()
+
+# ---------- exclude these participants ----------
+data_clean <- data_clean %>%
+  # exclude participant with incomplete data
+  filter(exclude_incomplete != 1) %>% ## this excludes 1 participant 
+  # exclude preterm
+  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>% ## this excludes n = 4
+  # exclude speech/language problem
+  filter(exclude_language_problem != 1) %>% ## thid excludes n = 0, as the participant has been eliminated in the previous command
+  # exclude those who doesn't fit the language proficiency criteria
+  anti_join(exclude_proficiency, by = "subject_id") %>% ## this excludes n = 3
+  # exclude parent-reported technical difficulty
+  filter(exclude_parent != 1) ## this excludes n = 1
+```
+
+## Detailed descriptive statistics of the children’s proficiency scores
+```{r include=FALSE, cache=TRUE}
+# ---------- Proficiency descriptive stats ----------
+## Overall mean proficiency scores
+mean_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency"), matches("global_")) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+mean_proficiency 
+
+## Those with equal proficiency across the two languages
+equal_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency"), matches("global_")) %>%
+  filter(comprehension_proficiency_eng == comprehension_proficiency_fr | comprehension_proficiency_eng == comprehension_proficiency_sp) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+## Dominant in English
+dominant_eng_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng > comprehension_proficiency_fr | comprehension_proficiency_eng > comprehension_proficiency_sp) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+## Dominant in French
+dominant_fr_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng < comprehension_proficiency_fr) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+## Dominant in Spanish
+dominant_sp_proficiency <- data_clean %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng < comprehension_proficiency_sp) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+```
+
+As mentioned in the main paper, out of the `r data_clean %>% distinct(subject_id, .keep_all = T) %>% filter(missing_LEQ != 1) %>% nrow()` children with proficiency data: `r equal_proficiency[1,2]+equal_proficiency[2,2]` children had equal comprehension proficiency in both languages (`r equal_proficiency[1,2]` French–English, `r equal_proficiency[2,2]` Spanish–English); `r dominant_eng_proficiency[1,2]+dominant_eng_proficiency[2,2]` children were more proficient in English comprehension than French/Spanish (`r dominant_eng_proficiency[1,2]` French–English, `r dominant_eng_proficiency[2,2]` Spanish–English); and `r dominant_fr_proficiency[1,1]+dominant_sp_proficiency[1,1]` children were more proficient in French/Spanish than in English (`r dominant_fr_proficiency[1,2]` French–English, `r dominant_sp_proficiency[1,2]` Spanish–English). Proficiency data was missing from 1 French–English and 3 Spanish–English children. Table S1 lists the detailed descriptive statistics of the proficiency scores. 
+
+```{r fig.align='center', out.width='100%', fig.pos='H', fig.cap=""}
+### Table S1
+knitr::include_graphics(here("analysis/paper/figure/TableS1.jpg"))
+```
+
+```{r include=FALSE, cache=TRUE}
+## lm model to compare proficiency score
+proficiency_model <- data_clean %>%
+  select(subject_id, lang_comm, matches("comprehension_")) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  mutate_at(vars(-c(subject_id, lang_comm)), ~as.numeric(.)) %>%
+  mutate(comprehension_proficiency_other = case_when(!is.na(comprehension_proficiency_fr) ~ comprehension_proficiency_fr,
+                                                     !is.na(comprehension_proficiency_sp) ~ comprehension_proficiency_sp,
+                                                     TRUE ~ NA_real_)) %>%
+  select(-c(comprehension_proficiency_fr, comprehension_proficiency_sp)) %>%
+  pivot_longer(-c(subject_id, lang_comm), names_to = "language", values_to = "proficiency") %>%
+  mutate(language = recode(language,
+                           comprehension_proficiency_eng = "English",
+                           comprehension_proficiency_other = "French/Spanish")) %>%
+  lm(proficiency ~ language * lang_comm, data = .,
+     contrasts = list(language = contr.sum(2)/2,
+                      lang_comm = contr.sum(2)/2))
+  
+summary(proficiency_model)
+```
+
+A linear regression model with proficiency score as the dependent variable was run to compare proficiency scores between the French–English and Spanish–English bilinguals. In the linear regression model, fixed effects included language community (French–English vs. Spanish–English) and language (English vs. French/Spanish), as well as their interaction[^1]: 
+
+proficiency ~ language * lang_community
+
+[^1]: We tried running a linear mixed-effects model with a random intercept for participants; however, the model returned a singular fit.
+
+\noindent We found no significant effect of language, language community, nor their interaction (*p*s > `r round(min((broom::tidy(proficiency_model) %>% filter(term != "(Intercept)"))$p.value),3)`. Therefore, there was no significant difference between the French–English and Spanish–English children in terms of their proficiency in English or their proficiency in the other language (i.e., French for the French–English children and Spanish for the Spanish–English children).
+
+## Exploratory analysis of the main paper
+In the main paper, we reported the preregistered analyses on accuracy — our primary dependent variable in determining bilingual children’s word learning in touching the labeled target object on each test trial. In this supplemental materials, we report two preregistered exploratory analyses: (1) looking at the effect of age, (2) using response time as the dependent variable, and an additional analysis on the effect of language proficiency.
+
+### Effect of age
+```{r include=FALSE, cache=TRUE}
+### glmer model
+test_acc_model <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  glmer(accuracy ~ condition * lang_comm + (1+condition|subject_id) + (1|stimulus), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2),
+        control=glmerControl(optimizer="bobyqa"))
+
+test_acc_model_age <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # center & scale age in months
+  #mutate(age_in_years = scale(age_in_years, center = TRUE, scale = TRUE)) %>%
+  mutate(age_in_months = scale(age_in_months, center = TRUE, scale = TRUE)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  #glmer(accuracy ~ condition * lang_comm * age_in_years + (1 + condition|subject_id) + (1|stimulus), family = binomial, data = .)
+  glmer(accuracy ~ condition * lang_comm * age_in_months + (1+condition|subject_id) + (1|stimulus), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2), 
+        control=glmerControl(optimizer="bobyqa"))
+
+anova(test_acc_model, test_acc_model_age)
+
+broom.mixed::tidy(test_acc_model_age) %>%
+  mutate_if(is.numeric, round, digits = 3) 
+
+# goodness of fit
+testUniformity(test_acc_model_age)
+testDispersion(test_acc_model_age) 
+plotQQunif(test_acc_model_age)
+```
+
+Our accuracy analysis revealed that bilingual children in both communities successfully learned the novel words regardless of the language switching patterns used during the learning blocks. As previous research has shown that children’s ability to learn words may improve with age (e.g., Read et al., 2021; Scaff et al., 2022), in our preregistration we also expected older children to show a greater accuracy than younger children. Therefore, we additionally compared models with and without age as a predictor variable. Bilingual children’s age in months was scaled and centered for ease of interpretation. The final model specification was:
+
+accuracy ~ condition * lang_community * age_in_months + (1 + condition|participant) + (1|item)
+
+\noindent When added to the model, neither the main effect nor interactions with age were significant (all *p*s > `r round(min((broom.mixed::tidy(test_acc_model_age) %>% filter(term != "(Intercept)"))$p.value, na.rm=T),3)`; see Table S2 for the coefficient estimates from this model). Moreover, a model comparison with and without age as a variable indicated no significant improvement in model fit, $\chi^2$(`r as.data.frame(anova(test_acc_model, test_acc_model_age))[2,7]`) = `r round(as.data.frame(anova(test_acc_model, test_acc_model_age))[2,6], 3)`, *p* = `r round(as.data.frame(anova(test_acc_model, test_acc_model_age))[2,8], 3)`. Overall, the pattern in this model was consistent with the main accuracy analysis reported in the paper where there was no significant difference in terms of condition or language community, suggesting that bilingual children successfully learned the novel words regardless of age. 
+
+```{r results = "asis", cache = TRUE, warning=FALSE, message=FALSE}
+### Table S2
+test_acc_model_age_coefs <- summary(test_acc_model_age)$coef %>%
+  as.data.frame %>%
+  mutate_at(c("Estimate","Std. Error", "z value", "Pr(>|z|)"), 
+            function (x) signif(x, digits = 3)) %>% 
+  rename(SE = `Std. Error`, 
+         z = `z value`,
+         p = `Pr(>|z|)`) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(test_acc_model_age_coefs) <- c("Intercept", "condition", "lang_community", "age_in_months",
+                                        "condition * lang_community", "condition * age_in_months", "lang_community * age_in_months",
+                                        "condition * lang_community * age_in_months")
+
+papaja::apa_table(test_acc_model_age_coefs, 
+                  format.args = list(digits = 3),
+                  col.names =c("","Estimate", "$SE$","$z$","$p$"),
+                  align=c("l","c","c","c","c"),
+                  caption="Table S2. Coefficient estimates from the logistic mixed-effects models predicting accuracy in the test blocks with age_in_months as an additional fixed effect.",
+                  landscape = FALSE,
+                  placement = "H")
+```
+
+### Response Time
+```{r include=FALSE, cache=TRUE}
+### number of trials in this analysis (keeping only trials with correct response)
+test_rt_trialN <- data_clean %>%
+  # keep only novel test
+  filter(test_part == "nov_test") %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # filter and keep only trials where a correct response is made
+  filter(accuracy == 1) %>%
+  count()
+
+### Descripctive stats
+mean_rt_by_condition <- data_clean %>%
+  # filter and keep only trials which were correctly-responded
+  filter(accuracy == 1) %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  group_by(lang_comm, subject_id, condition) %>% 
+  summarize(rt = mean(rt, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(lang_comm, condition) %>%
+  summarize(n_subj = n_distinct(subject_id),
+            mean_rt = mean(rt, na.rm = T),
+            sd_rt= sd(rt, na.rm = T),
+            min_rt = min(rt, na.rm = T),
+            max_rt = max(rt, na.rm = T),
+            se = sd_rt / sqrt(n()),
+            CI_lower = mean_rt - (1.96 * se),
+            CI_upper = mean_rt + (1.96 * se)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+```
+
+In addition to accuracy, we explored response time on each correctly-responded test trial as a dependent variable; a total of `r test_rt_trialN` correct trials were included in this analysis. The decision to use response time as an additional measure was driven by a possibility that this measure might be able to better capture more individual variability in terms of the speed of children’s lexical comprehension performance, since children were generally very accurate in the task. Moreover, response time may also be more sensitive to age effects, as children answer more quickly as they get older and gain more expertise with language (Scaff et al., 2022). On average, French–English bilingual children had a mean response time of `r round(mean_rt_by_condition[2,4])`ms in the _immediate-translation_ condition ($SD$ = `r round(mean_rt_by_condition[2,5],2)`; range = `r round(mean_rt_by_condition[2,6],2)` – `r round(mean_rt_by_condition[2,7],2)`) and `r round(mean_rt_by_condition[3,4])`ms in the _one-language-at-a-time_ condition ($SD$ = `r round(mean_rt_by_condition[3,5],2)`; range = `r round(mean_rt_by_condition[3,6],2)` – `r round(mean_rt_by_condition[3,7],2)`). On the other hand, Spanish–English bilingual children had a mean response time of `r round(mean_rt_by_condition[5,4])`ms in the _immediate-translation_ condition ($SD$ = `r round(mean_rt_by_condition[5,5],2)`; range = `r round(mean_rt_by_condition[5,6],2)` – `r round(mean_rt_by_condition[5,7],2)`) and `r round(mean_rt_by_condition[6,4])`ms in the _one-language-at-a-time_ condition ($SD$ = `r round(mean_rt_by_condition[6,5],2)`; range = `r round(mean_rt_by_condition[6,6],2)` – `r round(mean_rt_by_condition[6,7],2)`). 
+
+```{r include=FALSE, cache=TRUE}
+### lmer model
+test_rt_model_with_age <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # filter and keep only trials where a correct response is made
+  filter(accuracy == 1) %>%
+  # center & scale age in months
+  #mutate(age_in_years = scale(age_in_years, center = TRUE, scale = TRUE)) %>%
+  mutate(age_in_months = scale(age_in_months, center = TRUE, scale = TRUE)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # log-transform rt
+  mutate(log_rt = log(rt),
+         condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  lmer(log_rt ~ condition * lang_comm * age_in_months + (1 + condition|subject_id) + (1|stimulus), data = .,
+       contrasts = list(condition = contr.sum(2)/-2,
+                        lang_comm = contr.sum(2)/-2))
+
+broom.mixed::tidy(test_rt_model_with_age) %>%
+  mutate_if(is.numeric, round, digits = 3) 
+
+### goodness of fit
+testUniformity(test_rt_model_with_age)
+testDispersion(test_rt_model_with_age) 
+plotQQunif(test_rt_model_with_age)
+
+### post-hoc
+FrEn_test_rt_model <- data_clean %>%
+  filter(lang_comm == "French-English") %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # filter and keep only trials where a correct response is made
+  filter(accuracy == 1) %>%
+  # center & scale age in months
+  #mutate(age_in_years = scale(age_in_years, center = TRUE, scale = TRUE)) %>%
+  mutate(age_in_months = scale(age_in_months, center = TRUE, scale = TRUE)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # log-transform rt
+  mutate(log_rt = log(rt),
+         condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  lmer(log_rt ~ condition * age_in_months + (1+condition|subject_id) + (1|stimulus), data = .) #,
+       #contrasts = list(condition = contr.sum(2)/2))
+
+summary(FrEn_test_rt_model)
+
+SpEn_test_rt_model <- data_clean %>%
+  filter(lang_comm == "Spanish-English") %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # filter and keep only trials where a correct response is made
+  filter(accuracy == 1) %>%
+  # center & scale age in months
+  #mutate(age_in_years = scale(age_in_years, center = TRUE, scale = TRUE)) %>%
+  mutate(age_in_months = scale(age_in_months, center = TRUE, scale = TRUE)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # log-transform rt
+  mutate(log_rt = log(rt),
+         condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  lmer(log_rt ~ condition * age_in_months + (1+condition|subject_id) + (1|stimulus), data = .) #,
+       #contrasts = list(condition = contr.sum(2)/2))
+
+summary(SpEn_test_rt_model)
+```
+
+
+A linear mixed-effects model was run on response time. To correct for issues of non-normality, raw response time was log-transformed. Condition, language community, and age, as well as their interactions, were entered as fixed effects in the model; a random slope of condition by participant and a random intercept of stimulus item were also entered:
+
+log_rt ~ condition * lang_community * age_in_month + (1 + condition|participant) + (1|item)
+
+\noindent The coefficient estimates from this model are shown in Table S3 and Figure S1 visualizes this model. The only terms that approached significance was the three-way interaction. Following up on this three-way interaction, separate linear mixed-effects analyses were run for the French–English bilinguals and the Spanish–English bilinguals. The models revealed that the effect of age approached significance in the _immediate-translation_ condition for the French–English bilinguals (Estimate = `r round((broom.mixed::tidy(FrEn_test_rt_model) %>% filter(term == "age_in_months"))$estimate,3)`, SE = `r round((broom.mixed::tidy(FrEn_test_rt_model) %>% filter(term == "age_in_months"))$std.error,3)`, t = `r round((broom.mixed::tidy(FrEn_test_rt_model) %>% filter(term == "age_in_months"))$statistic,3)`, *p* = `r round((broom.mixed::tidy(FrEn_test_rt_model) %>% filter(term == "age_in_months"))$p.value,3)`), suggesting that the reaction time for French–English bilinguals decreased significantly in the _immediate-translation_ condition across age. However, the effect of age was not significant for the Spanish–English bilinguals (Estimate = `r round((broom.mixed::tidy(SpEn_test_rt_model) %>% filter(term == "age_in_months"))$estimate,3)`, SE = `r round((broom.mixed::tidy(SpEn_test_rt_model) %>% filter(term == "age_in_months"))$std.error,3)`, t = `r round((broom.mixed::tidy(SpEn_test_rt_model) %>% filter(term == "age_in_months"))$statistic,3)`, *p* = `r round((broom.mixed::tidy(SpEn_test_rt_model) %>% filter(term == "age_in_months"))$p.value,3)`). Moreover, we found no significant interaction across age between the two conditions in either group of bilinguals. Overall, similar to the patterns reported in the first set of analysis on accuracy, we did not observe any significant difference in terms of condition or language community, nor in their interaction. Therefore, consistent with the accuracy analysis, bilingual children in both communities performed similarly in word learning across both the _immediate-translation_ and _one-language-at-a-time_ conditions.  
+
+```{r results = "asis", cache = TRUE, warning=FALSE, message=FALSE}
+### Table S3
+test_rt_model_with_age_coefs <- summary(test_rt_model_with_age)$coef %>%
+  as.data.frame %>%
+  select(-df)%>%
+  mutate_at(c("Estimate","Std. Error", "t value", "Pr(>|t|)"), 
+            function (x) signif(x, digits = 3)) %>% 
+  rename(SE = `Std. Error`, 
+         t = `t value`,
+         p = `Pr(>|t|)`) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(test_rt_model_with_age_coefs) <- c("Intercept", "condition", "lang_community", "age_in_months",
+                                        "condition * lang_community", "condition * age_in_months", "lang_community * age_in_months",
+                                        "condition * lang_community * age_in_months")
+
+papaja::apa_table(test_rt_model_with_age_coefs, 
+                  format.args = list(digits = 3),
+                  col.names =c("","Estimate", "$SE$","$t$","$p$"),
+                  align=c("l","c","c","c","c"),
+                  caption="Table S3. Coefficient estimates from the linear mixed-effects model predicting log-transformed response time in the test blocks.",
+                  landscape = FALSE)
+```
+
+```{r FigureS1, fig.align='center', fig.height=8, fig.width=12, out.width='90%', fig.cap="Response time by condition, language community, and age in the test block. Individual dots plot the data from each individual participant.", warning=FALSE, cache=TRUE}
+### Plotting rt with individual points
+#### rt per individual participant
+individual_rt <- data_clean %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only novel test
+  filter(test_part == "nov_test") %>%
+  group_by(test_order, lang_comm, subject_id, age_in_years, age_in_months, condition) %>%
+  summarize(mean_rt = mean(rt, na.rm=T)) %>%
+  pivot_wider(names_from = "condition", values_from = "mean_rt") %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+
+#### ggplot with age
+plot_test_rt_with_age <- individual_rt %>% 
+  pivot_longer(c(immediate_translation, one_language_at_a_time), names_to = "condition", values_to = "mean_rt") %>%
+  mutate(condition = recode(condition,
+                            immediate_translation = "Immediate-translation",
+                            one_language_at_a_time = "One-language-at-a-time")) %>%
+  mutate(lang_comm = recode(lang_comm,
+                            "French-English" = "French–English \n (N = 31)",
+                            "Spanish-English" ="Spanish–English \n (N = 22)")) %>%
+  ggplot(aes(y = mean_rt, x = age_in_months, fill = condition, color = condition)) +
+  geom_smooth(method="lm", se = F, size = 2) + 
+  facet_grid(. ~ lang_comm) +
+  geom_point(alpha = 0.5, size = 3) +
+  scale_fill_manual(name = "Condition", values=c("#525252", "#bdbdbd"), drop = FALSE) +
+  scale_color_manual(name = "Condition", values=c("#525252", "#bdbdbd")) +
+  theme_minimal() +
+  theme(panel.spacing.x = unit(2.5, "lines"),
+        text = element_text(size=20),
+        axis.text = element_text(size = 20, color = "black"),
+        legend.text = element_text(size = 20),
+        legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "\n Age (months)",
+       y = "Response time (ms)",
+       fill = "Condition",
+       color = "Condition") +
+  guides(fill = guide_legend(order = 2), color = guide_legend(order = 2)) +
+  theme(legend.box="vertical", legend.position = "bottom")
+
+#ggsave("output_main/plot_test_rt_with_age.png", plot_test_rt_with_age, width = 12, height = 8)
+
+plot_test_rt_with_age
+```
+
+### Language Proficiency
+In addition to the preregistered analyses, we explored the effect of language proficiency on bilingual children’s learning of the novel cross-language words. Previous research has revealed mixed evidence as to whether language proficiency interacts with bilingual children’s word learning ability during different types of bilingual book reading sessions (e.g., Brouillard et al., 2022; Read et al., 2021). Therefore, it is plausible that language proficiency may have an effect on how bilingual children learn from different language switching patterns.
+
+```{r include=FALSE, cache=TRUE}
+### glmer model
+test_acc_model_with_proficiency_withlangcomm <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # remove subject_id whose proficiency info are missing (n=4)
+  filter(missing_LEQ != 1) %>%
+  # create a comprehension variable for the tested language
+  mutate(language_proficiency = case_when(
+    language == "english" ~ as.numeric(comprehension_proficiency_eng),
+    language == "french" ~ as.numeric(comprehension_proficiency_fr),
+    language == "spanish" ~ as.numeric(comprehension_proficiency_sp),
+    TRUE ~ NA_real_)) %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1+ condition|subject_id) + (1|stimulus), family = binomial, data = .)
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1|subject_id) + (1|stimulus), family = binomial, data = .)
+  glmer(accuracy ~ condition * lang_comm * language_proficiency + (1|subject_id), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2))
+
+
+test_acc_model_with_proficiency <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # remove subject_id whose proficiency info are missing (n=4)
+  filter(missing_LEQ != 1) %>%
+  # create a comprehension variable for the tested language
+  mutate(language_proficiency = case_when(
+    language == "english" ~ as.numeric(comprehension_proficiency_eng),
+    language == "french" ~ as.numeric(comprehension_proficiency_fr),
+    language == "spanish" ~ as.numeric(comprehension_proficiency_sp),
+    TRUE ~ NA_real_)) %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1+ condition|subject_id) + (1|stimulus), family = binomial, data = .)
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1|subject_id) + (1|stimulus), family = binomial, data = .)
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1|subject_id), family = binomial, data = .)
+  glmer(accuracy ~ condition * language_proficiency + (1|subject_id), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2))
+
+anova(test_acc_model_with_proficiency_withlangcomm, test_acc_model_with_proficiency)
+
+broom.mixed::tidy(test_acc_model_with_proficiency) %>%
+  mutate_if(is.numeric, round, digits = 3) 
+
+### goodness of fit
+testUniformity(test_acc_model_with_proficiency)
+testDispersion(test_acc_model_with_proficiency) 
+plotQQunif(test_acc_model_with_proficiency)
+```
+
+Building upon the logistic mixed-effects model used in the main accuracy analysis, we added a variable of proficiency score to the model. This created a continuous variable with the caregiver-reported proficiency rating in each language, which we used to predict children’s performance on trials in that same language. In this analysis, we excluded data from one French–English and three Spanish–English children participants who were missing their proficiency information; data from `r data_clean %>% filter(missing_LEQ != 1) %>% filter(lang_comm == "French-English") %>% distinct(subject_id) %>% nrow()` French–English and `r data_clean %>% filter(missing_LEQ != 1) %>% filter(lang_comm == "Spanish-English") %>% distinct(subject_id) %>% nrow()` Spanish–English children remained in the analysis. The initial specification was:
+
+accuracy ~ condition * lang_community * proficiency + (1 + condition|participant) + (1|item)
+
+However, as the initial model did not converge, we first removed the random slope for condition and the random intercept for item. Moreover, since we did not find any significant difference between the two communities in the main accuracy analysis, we performed a model comparison between the model with language communities and the one without. This comparison also indicated no significant improvement in model fit, $\chi^2$(`r as.data.frame(anova(test_acc_model_with_proficiency_withlangcomm, test_acc_model_with_proficiency))[2,7]`) = `r round(as.data.frame(anova(test_acc_model_with_proficiency_withlangcomm, test_acc_model_with_proficiency))[2,6],3)`, $p$ = `r round(as.data.frame(anova(test_acc_model_with_proficiency_withlangcomm, test_acc_model_with_proficiency))[2,8],3)`, so we further pruned the effect of language community from the model. Therefore, the final model was:
+
+accuracy ~ condition * proficiency + (1|participant)
+
+\noindent The coefficient estimates from this model are shown in Table S4 and Figure S2 visualizes this model. Similar to the main analysis, no significant difference between conditions was found. Moreover, we did not observe any significant effect of language proficiency. As can be seen in Figure S2, the level of proficiency did not hugely impact children’ accuracy in our experiment. Note that we also ran another model including all the children who participated in our experiment (i.e., including those who did not initially meet our language proficiency criteria; please refer to the section below for the detailed statistics).
+
+```{r results = "asis", cache = TRUE, warning=FALSE, message=FALSE}
+### Table S4
+test_acc_model_with_proficiency_coefs <- summary(test_acc_model_with_proficiency)$coef %>%
+  as.data.frame %>%
+  mutate_at(c("Estimate","Std. Error", "z value", "Pr(>|z|)"), 
+            function (x) signif(x, digits = 3)) %>% 
+  rename(SE = `Std. Error`, 
+         t = `z value`,
+         p = `Pr(>|z|)`) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(test_acc_model_with_proficiency_coefs) <- c("Intercept", "condition", "proficiency", "condition * proficiency")
+
+papaja::apa_table(test_acc_model_with_proficiency_coefs, 
+                  format.args = list(digits = 3),
+                  col.names =c("","Estimate", "$SE$","$z$","$p$"),
+                  align=c("l","c","c","c","c"),
+                  caption="Table S4. Coefficient estimates from the logistic mixed-effects model predicting accuracy in the test blocks with language proficiency scores.",
+                  landscape = FALSE)
+```
+
+
+```{r FigureS2, fig.align='center', fig.height=8, fig.width=8, out.width='50%', fig.cap="Proportion of accuracy by condition and language proficiency in the test blocks. Individual dots plot the data from each individual participant.", warning=FALSE, cache=TRUE}
+test_acc_proficiency_plot <- data_clean %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # remove subject_id whose proficiency info are missing (n=4)
+  filter(missing_LEQ != 1) %>%
+  # create a comprehension variable for the tested language
+  mutate(language_proficiency = case_when(
+    language == "english" ~ as.numeric(comprehension_proficiency_eng),
+    language == "french" ~ as.numeric(comprehension_proficiency_fr),
+    language == "spanish" ~ as.numeric(comprehension_proficiency_sp),
+    TRUE ~ NA_real_)) %>%
+  # summarize
+  group_by(subject_id, condition, language) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  ungroup() %>%
+  mutate(condition = recode(condition,
+                            immediate_translation = "Immediate-translation",
+                            one_language_at_a_time = "One-language-at-a-time")) %>%
+  ggplot(aes(y = prop_accuracy, x = language_proficiency, fill = condition, color = condition)) +
+  geom_smooth(method="glm", se = F, size = 2) + 
+  geom_point(alpha = 0.5, size = 3, position = position_jitter(w = 0.1, h = 0.1)) +
+  #facet_grid(test_lang ~ lang_comm) +
+  #facet_grid(. ~ lang_comm) +
+  #facet_grid(. ~ test_lang) +
+  scale_x_continuous(limits = c(1, 10),
+                     breaks = seq(0, 10, by = 1)) +
+  theme_minimal() +
+  scale_fill_manual(name = "Condition", values=c("#525252", "#bdbdbd", "#525252", "#bdbdbd")) +
+  scale_color_manual(name = "Condition", values=c("#525252", "#bdbdbd", "#525252", "#bdbdbd")) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.1)) +
+  theme(panel.spacing.x = unit(2.5, "lines"),
+        text = element_text(size=20),
+        axis.text = element_text(size = 20, color = "black"),
+        legend.text = element_text(size = 20),
+        legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "\n Proficiency",
+       y = "Proportion of Accuracy",
+       fill = "Condition",
+       color = "Condition") 
+
+#ggsave("output_main/plot_test_acc_with_proficiency.png", test_acc_proficiency_plot, 
+#       #width = 12, height = 8)
+#       width = 8, height = 8)
+
+test_acc_proficiency_plot
+```
+
+## Supplemental analysis using the preregistered exclusion criteria
+Analyses reported in the main paper deviated from the preregistered language exclusion criteria, as it resulted in exclusion of a higher than anticipated number of children and thus led to a smaller sample size and decreased statistical power. For transparency, this supplemental material reports the analyses using the more stringent preregistered exclusion criteria. 
+
+```{r include=FALSE, cache=TRUE}
+# ---------- read in data again to create a new data frame using the preregistered criteria----------
+data_clean <- read.csv(here("analysis/data_clean.csv"))
+
+# ---------- check exclusion ----------
+exclude_proficiency <- data_clean %>%
+  # check familiar phase result
+  filter(test_part == "fam_test") %>%
+  group_by(subject_id, lang_comm, language, comprehension_proficiency_eng, comprehension_proficiency_fr, comprehension_proficiency_sp) %>%
+  dplyr::summarize(total_acc_fam = sum(accuracy, na.rm = T)) %>% ## calculate number of correct familiar word trials per language
+  # to wide format
+  pivot_wider(names_from = language, values_from = total_acc_fam) %>%
+  mutate(
+    # flag those who did not get 5 trials correct out of the 6 trials in each language during the familiar word phase
+    exclude_fam_proficiency = 
+      if_else(english < 5 & !is.na(english) | french < 5 & !is.na(french) | spanish < 5 & !is.na(spanish), 1, 0),
+    # flag those who did not get 7/10 in comprehension proficiency
+    exclude_comp_proficiency =
+      if_else(comprehension_proficiency_eng < 7 & !is.na(comprehension_proficiency_eng) | 
+              comprehension_proficiency_fr < 7 & !is.na(comprehension_proficiency_fr) | 
+              comprehension_proficiency_sp < 7 & !is.na(comprehension_proficiency_sp), 1, 0),
+    # flag those subject_id who doesn't fulfil the language proficiency criteria (> 5/6 correct in familiar test & >7/10 in comprehension proficiency)
+    exclude_lang_proficiency = if_else(exclude_fam_proficiency == 1 | exclude_comp_proficiency == 1, 1, 0)) %>%
+    filter(exclude_lang_proficiency == 1)
+
+data_clean_prereg <- data_clean %>%
+  # exclude participant with incomplete data
+  filter(exclude_incomplete != 1) %>% ## this excludes 1 participant 
+  # exclude preterm
+  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>% ## this excludes n = 4
+  # exclude speech/language problem
+  filter(exclude_language_problem != 1) %>% ## thid excludes n = 0, as the participant has been eliminated in the previous command
+  # exclude those who doesn't fit the language proficiency criteria
+  anti_join(exclude_proficiency, by = "subject_id") %>% ## this excludes n = 20
+  # exclude parent-reported technical difficulty
+  filter(exclude_parent != 1) ## this excludes n = 1
+
+# ---------- Demographics ----------
+## number of final participants
+### Total (n = 36)
+data_clean_prereg %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  nrow()
+
+### By language community
+data_clean_prereg %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm) %>%
+  count()
+
+### By gender
+data_clean_prereg %>% 
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm, gender) %>%
+  count()
+
+### Mean age
+mean_age_prereg <- data_clean_prereg %>% 
+  group_by(lang_comm) %>%
+  dplyr::summarize(mean_age_years = mean(age_in_years, na.rm =T),
+            sd_age_years = sd(age_in_years, na.rm = T),
+            min_age_years = min(age_in_years, na.rm =T),
+            max_age_years = max(age_in_years, na.rm =T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+```
+
+Following the preregistered language exclusion criteria, a total of `r exclude_proficiency %>% filter(lang_comm == "French-English") %>% nrow()` French–English and `r exclude_proficiency %>% filter(lang_comm == "Spanish-English") %>% nrow()` Spanish–English children were excluded. When additional exclusion criteria were applied (see participants section in the main paper), the remaining sample consisted of `r data_clean_prereg %>% filter(lang_comm == "French-English") %>% distinct(subject_id, .keep_all = T) %>% nrow()` French–English children (`r data_clean_prereg %>% filter(lang_comm == "French-English" & gender == "Female") %>% distinct(subject_id, .keep_all = T) %>% nrow()` girls; Mean age = `r mean_age_prereg[1,2]` years, $SD$ = `r mean_age_prereg[1,3]`, range = `r mean_age_prereg[1,4]` – `r mean_age_prereg[1,5]`) and `r data_clean_prereg %>% filter(lang_comm == "Spanish-English") %>% distinct(subject_id, .keep_all = T) %>% nrow()` Spanish–English children (`r data_clean_prereg %>% filter(lang_comm == "Spanish-English" & gender == "Female") %>% distinct(subject_id, .keep_all = T) %>% nrow()` girls; Mean age = `r mean_age_prereg[2,2]` years, $SD$ = `r mean_age_prereg[2,3]`, range = `r mean_age_prereg[2,4]` – `r mean_age_prereg[2,5]`).
+
+```{r include=FALSE, cache=TRUE}
+# ---------- Proficiency descriptive stats ----------
+## overall mean proficiency scores
+mean_proficiency_prereg <- data_clean_prereg %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency"), matches("global_")) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+mean_proficiency_prereg
+
+## Those with equal proficiency across the two languages
+equal_proficiency_prereg <- data_clean_prereg %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency"), matches("global_")) %>%
+  filter(comprehension_proficiency_eng == comprehension_proficiency_fr | comprehension_proficiency_eng == comprehension_proficiency_sp) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+equal_proficiency_prereg
+
+## Dominant in English
+dominant_eng_proficiency_prereg <- data_clean_prereg %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng > comprehension_proficiency_fr | comprehension_proficiency_eng > comprehension_proficiency_sp) %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+dominant_eng_proficiency_prereg
+
+## Dominant in French
+dominant_fr_proficiency_prereg <- data_clean_prereg %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng < comprehension_proficiency_fr) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # French
+            mean_proficiency_fr = mean(comprehension_proficiency_fr, na.rm = T),
+            sd_proficiency_fr = sd(comprehension_proficiency_fr, na.rm = T),
+            min_proficiency_fr = min(comprehension_proficiency_fr, na.rm = T),
+            max_proficiency_fr = max(comprehension_proficiency_fr, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+dominant_fr_proficiency_prereg
+
+## Dominant in Spanish
+dominant_sp_proficiency_prereg <- data_clean_prereg %>%
+  # filter out missing_LEQ
+  filter(missing_LEQ != 1) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, matches("comprehension_proficiency")) %>%
+  filter(comprehension_proficiency_eng < comprehension_proficiency_sp) %>%
+  dplyr::summarize(n = length(subject_id),
+            # English
+            mean_proficiency_eng = mean(comprehension_proficiency_eng, na.rm = T),
+            sd_proficiency_eng = sd(comprehension_proficiency_eng, na.rm = T),
+            min_proficiency_eng = min(comprehension_proficiency_eng, na.rm = T),
+            max_proficiency_eng = max(comprehension_proficiency_eng, na.rm = T),
+            # Spanish
+            mean_proficiency_sp = mean(comprehension_proficiency_sp, na.rm = T),
+            sd_proficiency_sp = sd(comprehension_proficiency_sp, na.rm = T),
+            min_proficiency_sp = min(comprehension_proficiency_sp, na.rm = T),
+            max_proficiency_sp = max(comprehension_proficiency_sp, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+dominant_sp_proficiency_prereg
+
+## lm model to compare proficiency score
+proficiency_model_prereg <- data_clean_prereg %>%
+  select(subject_id, lang_comm, matches("comprehension_")) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  mutate_at(vars(-c(subject_id, lang_comm)), ~as.numeric(.)) %>%
+  mutate(comprehension_proficiency_other = case_when(!is.na(comprehension_proficiency_fr) ~ comprehension_proficiency_fr,
+                                                     !is.na(comprehension_proficiency_sp) ~ comprehension_proficiency_sp,
+                                                     TRUE ~ NA_real_)) %>%
+  select(-c(comprehension_proficiency_fr, comprehension_proficiency_sp)) %>%
+  pivot_longer(-c(subject_id, lang_comm), names_to = "language", values_to = "proficiency") %>%
+  mutate(language = recode(language,
+                           comprehension_proficiency_eng = "English",
+                           comprehension_proficiency_other = "French/Spanish")) %>%
+  lm(proficiency ~ language * lang_comm, data = .)
+  
+summary(proficiency_model_prereg)
+
+# ---------- Parental education level ----------
+parent_edu_prereg <- data_clean_prereg %>%
+  select(subject_id, lang_comm, parent_edu_level) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm) %>%
+  mutate(college_grad = case_when(parent_edu_level == "Bachelor’s Degree" | parent_edu_level == "Master’s Degree" | parent_edu_level == "Doctoral Degree" ~ 1,
+                                  TRUE ~ 0),
+         n = length(subject_id)) %>%
+  select(lang_comm, college_grad, n) %>%
+  group_by(lang_comm, college_grad) %>%
+  mutate(n_group = length(college_grad),
+         percent_group = round(n_group/n * 100, 0)) %>%
+  distinct(college_grad, .keep_all = T)
+```
+
+```{r fig.align='center', out.width='100%', fig.pos='H', fig.cap=""}
+### Table S5
+knitr::include_graphics(here("analysis/paper/figure/TableS5.jpg"))
+```
+
+Language proficiency information was missing for 1 French–English and 3 Spanish–English children; `r equal_proficiency_prereg[1,2]+equal_proficiency_prereg[2,2]` children had equal comprehension proficiency in both languages (`r equal_proficiency_prereg[1,2]` French–English, `r equal_proficiency_prereg[2,2]` Spanish–English);  `r dominant_eng_proficiency_prereg[1,2]` French–English children were more proficient in English comprehension than French/Spanish; and `r dominant_fr_proficiency_prereg[1,1]+dominant_sp_proficiency_prereg[1,1]` children were more proficient in French/Spanish than in English (`r dominant_fr_proficiency_prereg[1,1]` French–English, `r dominant_sp_proficiency_prereg[1,1]` Spanish–English). Table S5 contains descriptive statistics of the proficiency scores. We also ran a linear regression model with proficiency score as the dependent variable to compare proficiency scores between the French–English and Spanish–English bilinguals[^2]. There was no significant effect of language, language community, nor their interaction ($p$s > `r round(min((broom::tidy(proficiency_model_prereg) %>% filter(term != "(Intercept)"))$p.value),3)`). Similar to the sample reported in the main paper, there was no significant difference between the French–English and Spanish–English children in terms of their proficiency in English as well as their proficiency in the other language (i.e., French for the French–English children and Spanish for the Spanish–English children). In this more restricted data set, `r parent_edu_prereg[2,5]`% of the mothers in Montreal and `r parent_edu_prereg[3,5]`% of the mothers in New Jersey had completed a university degree or higher. 
+
+[^2]: In the linear regression model with proficiency scores as the dependent variable, fixed effects included language community (French–English vs. Spanish–English) and language (English vs. French/Spanish), as well as their interaction.
+
+In the following analyses, we followed the same procedure as in the main paper, where we first explored the preregistered analyses with proportion of accuracy as the dependent variable and then performed exploratory analyses: (1) on the effect of age, (2) with response time as the dependent variable, and (3) the effect of proficiency.
+
+### Accuracy
+```{r include=FALSE, cache=TRUE}
+# ---------- number of trials excluded ----------
+## Number of familiar trials
+fam_trialN_prereg <- data_clean_prereg %>%
+  # exclude trials where no response was made
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test") %>%
+  count()
+
+fam_trialN_afterexclusion_prereg <- data_clean_prereg %>%
+  # exclude trials where no response was made
+  #filter(!is.na(rt)) %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test") %>%
+  count()
+
+fam_trialN_prereg - fam_trialN_afterexclusion_prereg
+
+## Number of novel test trials
+test_trialN_prereg <- data_clean_prereg %>%
+  # exclude trials where no response was made
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  count()
+
+test_trialN_afterexclusion_prereg <- data_clean_prereg %>%
+  # exclude trials where no response was made
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  count()
+
+test_trialN_prereg - test_trialN_afterexclusion_prereg
+
+## number of trials excluded from each child
+individual_trialN_prereg <- data_clean_prereg %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  # calculate number of trials to exclude
+  mutate(exclude_trial = case_when(rt > 10000 ~ 1,
+                                   is.na(rt) ~ 1,
+                                    TRUE ~ 0)) %>%  
+  group_by(subject_id) %>%
+  summarize(n_trial = length(subject_id),
+            n_trial_exclude = sum(exclude_trial),
+            percentage_exclude = n_trial_exclude/n_trial * 100)
+
+summary(individual_trialN_prereg)
+```
+
+#### Familiar word block
+```{r include=FALSE, cache=TRUE}
+### Descriptive stats
+mean_prop_fam_language_prereg <- data_clean_prereg %>%
+  # exclude trials where no response was made
+  #filter(!is.na(rt)) %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test") %>%
+  group_by(subject_id, language, condition) %>% # add age?
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  #filter(!subject_id %in% c("BP007", "BP024")) %>%
+  group_by(lang_comm, language, condition) %>%
+  dplyr::summarize(n_subj = n_distinct(subject_id),
+            mean_propAccuracy = mean(prop_accuracy, na.rm = T),
+            sd_propAccuracy = sd(prop_accuracy, na.rm = T),
+            min_propAccuracy = min(prop_accuracy, na.rm = T),
+            max_propAccuracy = max(prop_accuracy, na.rm = T)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+```
+
+French–English bilingual children showed a mean accuracy of `r mean_prop_fam_language_prereg[1,5]` in the familiar English-word trials ($SD$ = `r mean_prop_fam_language_prereg[1,6]`; range = `r mean_prop_fam_language_prereg[1,7]` – `r mean_prop_fam_language_prereg[1,8]`) and `r mean_prop_fam_language_prereg[2,5]` in the familiar French-word trials ($SD$ = `r mean_prop_fam_language_prereg[2,6]`; range = `r mean_prop_fam_language_prereg[2,7]` – `r mean_prop_fam_language_prereg[2,8]`). Meanwhile, Spanish–English bilingual children showed a mean accuracy of `r mean_prop_fam_language_prereg[3,5]` in the familiar English-word trials ($SD$ = `r mean_prop_fam_language_prereg[3,6]`) and `r mean_prop_fam_language_prereg[4,5]` in the familiar Spanish-word trials ($SD$ = `r mean_prop_fam_language_prereg[4,6]`). As children’s performance was almost at ceiling with little variance, it was not possible to fit the logistic mixed-effects model to compare performance across the two communities. On the other hand, this near-ceiling accuracy also suggests that our preregistered exclusion criteria could be too stringent such that only children with nearly perfect accuracy were included in the analyses.
+
+#### Test blocks
+```{r include=FALSE, cache=TRUE}
+### Descriptive stats
+mean_prop_by_condition_prereg <- data_clean_prereg %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  group_by(subject_id, condition) %>% 
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  group_by(lang_comm, condition) %>%
+  dplyr::summarize(n_subj = n_distinct(subject_id),
+            mean_propAccuracy = mean(prop_accuracy, na.rm = T),
+            sd_propAccuracy = sd(prop_accuracy, na.rm = T),
+            min_propAccuracy = min(prop_accuracy, na.rm = T),
+            max_propAccuracy = max(prop_accuracy, na.rm = T),
+            se = sd_propAccuracy / sqrt(n()),
+            CI_lower = mean_propAccuracy - (1.96 * se),
+            CI_upper = mean_propAccuracy + (1.96 * se)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+```
+
+```{r include=FALSE, cache=TRUE}
+### glmer model
+prereg_test_acc_model <- data_clean_prereg %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  glmer(accuracy ~ condition * lang_comm + (1+condition|subject_id) + (1|stimulus), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2),
+        control=glmerControl(optimizer="bobyqa"))
+
+broom.mixed::tidy(prereg_test_acc_model) %>%
+    mutate_if(is.numeric, round, digits = 3) 
+
+
+### goodness of fit
+testUniformity(prereg_test_acc_model)
+testDispersion(prereg_test_acc_model) 
+plotQQunif(prereg_test_acc_model)
+
+### one-sample t-tests: comparing to at-chance level of 0.50
+#### 1. French-English in immediate-translation condition
+prereg_chance_test_FrEn_immd <- data_clean_prereg %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  filter(lang_comm == "French-English" & condition == "immediate_translation") %>%
+  group_by(subject_id) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+t.test(prereg_chance_test_FrEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")
+
+#### 2. French-English in one-language-at-a-time condition
+prereg_chance_test_FrEn_one_lang <- data_clean_prereg %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  filter(lang_comm == "French-English" & condition == "one_language_at_a_time") %>%
+  group_by(subject_id) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+t.test(prereg_chance_test_FrEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")
+
+#### 3. Spanish-English in immediate-translation condition
+prereg_chance_test_SpEn_immd <- data_clean_prereg %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  filter(lang_comm == "Spanish-English" & condition == "immediate_translation") %>%
+  group_by(subject_id) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+t.test(prereg_chance_test_SpEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")
+
+#### 4. Spanish-English in one-language-at-a-time condition
+prereg_chance_test_SpEn_one_lang <- data_clean_prereg %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  filter(lang_comm == "Spanish-English" & condition == "one_language_at_a_time") %>%
+  group_by(subject_id) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+t.test(prereg_chance_test_SpEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")
+```
+
+On average, French–English bilingual children showed a mean accuracy of `r mean_prop_by_condition_prereg[1,4]` in the _immediate-translation_ condition ($SD$ = `r mean_prop_by_condition_prereg[1,5]`; range = `r mean_prop_by_condition_prereg[1,6]` – `r mean_prop_by_condition_prereg[1,7]`) and `r mean_prop_by_condition_prereg[2,4]` in the _one-language-at-a-time_ condition ($SD$ = `r mean_prop_by_condition_prereg[2,5]`; range = `r mean_prop_by_condition_prereg[2,6]` – `r mean_prop_by_condition_prereg[2,7]`). On the other hand, Spanish–English bilingual children showed a mean accuracy of `r mean_prop_by_condition_prereg[3,4]` in the _immediate-translation_ condition ($SD$ = `r mean_prop_by_condition_prereg[3,5]`; range = `r mean_prop_by_condition_prereg[3,6]` – `r mean_prop_by_condition_prereg[3,7]`) and `r mean_prop_by_condition_prereg[4,4]` in the _one-language-at-a-time_ condition ($SD$ = `r mean_prop_by_condition_prereg[4,5]`; range = `r mean_prop_by_condition_prereg[4,6]` – `r mean_prop_by_condition_prereg[4,7]`). Separate one-sample t-tests were run on the proportion of accuracy in each condition per community, and confirmed that children from both communities learned the novel words in each condition significantly above the at-chance level of 0.50 (ps < .01)[^3]. 
+
+[^3]: For the French–English bilinguals, they performed significantly above the at-chance level in the _immediate-translation_ condition ($t$(`r t.test(prereg_chance_test_FrEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$parameter`) = `r round(t.test(prereg_chance_test_FrEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$statistic, 2)`, $p `r papaja::printp(t.test(prereg_chance_test_FrEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$p.value)`$) and the _one-language-at-a-time_ condition ($t$(`r t.test(prereg_chance_test_FrEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$parameter`) = `r round(t.test(prereg_chance_test_FrEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$statistic, 2)`, $p = `r papaja::printp(t.test(prereg_chance_test_FrEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$p.value)`$). Likewise, the Spanish–English bilinguals performed significantly above the at-chance level in the _immediate-translation_ condition ($t$(`r t.test(prereg_chance_test_SpEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$parameter`) = `r round(t.test(prereg_chance_test_SpEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$statistic, 2)`, $p `r papaja::printp(t.test(prereg_chance_test_SpEn_immd$prop_accuracy, mu = 0.5, alternative = "greater")$p.value)`$) and the _one-language-at-a-time_ condition ($t$(`r t.test(prereg_chance_test_SpEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$parameter`) = `r round(t.test(prereg_chance_test_SpEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$statistic, 2)`, $p = `r papaja::printp(t.test(prereg_chance_test_SpEn_one_lang$prop_accuracy, mu = 0.5, alternative = "greater")$p.value)`$).
+
+Following the main paper, we ran a logistic mixed-effects model on the proportion of accuracy, with condition and language community as fixed effects, and a random slope of condition by participants and random intercept of item:
+
+accuracy ~ condition * lang_community + (1+ condition|participant) + (1|item)
+
+\noindent The coefficient estimates from this model are shown in Table S6, and Figure S3 visualizes this model. Consistent with the patterns found in the main paper, the model also did not reveal any significant difference in terms of condition or language community, and the interaction between condition and language community was also not significant. Therefore, similar to the main paper, bilingual children in both communities showed strong evidence of word learning in both language switching conditions. 
+
+```{r results = "asis", cache = TRUE, warning=FALSE, message=FALSE}
+### Table S6
+prereg_test_acc_model_coefs <- summary(prereg_test_acc_model)$coef %>%
+  as.data.frame %>%
+  mutate_at(c("Estimate","Std. Error", "z value", "Pr(>|z|)"), 
+            function (x) signif(x, digits = 3)) %>% 
+  rename(SE = `Std. Error`, 
+         t = `z value`,
+         p = `Pr(>|z|)`) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(prereg_test_acc_model_coefs) <- c("Intercept", "condition", "lang_community", "condition * lang_community")
+
+papaja::apa_table(prereg_test_acc_model_coefs, 
+                  format.args = list(digits = 3),
+                  col.names =c("","Estimate", "$SE$","$z$","$p$"),
+                  align=c("l","c","c","c","c"),
+                  caption="Table S6. Coefficient estimates from the logistic mixed-effects models predicting accuracy in the test phase.",
+                  landscape = FALSE,
+                  placement = "H")
+```
+
+```{r FigureS3, fig.align='center', fig.height=6, fig.width=6, out.width='60%', fig.cap="Average proportion of accuracy by condition and language community in the test blocks. Dots plot the data from each individual participant. Error bars indicate 95\\% confidence intervals, and the black dashed line represents the at-chance accuracy level of 0.50.", warning=FALSE, cache=TRUE}
+### Plotting prop of accuracy with individual points
+#### proportion of accuracy per individual participant
+individual_accuracy_prereg <- data_clean_prereg %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only novel test
+  filter(test_part == "nov_test") %>%
+  group_by(test_order, lang_comm, subject_id, age_in_years, age_in_months, condition) %>%
+  dplyr::summarize(n_trial = n(),
+            mean_propAccuracy = sum(accuracy, na.rm = T)/n_trial) %>%
+  select(-n_trial) %>%
+  pivot_wider(names_from = "condition", values_from = "mean_propAccuracy") %>%
+  mutate(across(is.numeric, ~ round(., 2))) %>%
+  pivot_longer(c(immediate_translation, one_language_at_a_time), names_to = "condition", values_to = "mean_propAccuracy") %>%
+  mutate(condition = recode(condition,
+                            immediate_translation = "Immediate-translation",
+                            one_language_at_a_time = "One-language-at-a-time")) 
+
+#### ggplot
+plot_test_acc_with_individuals_prereg <- mean_prop_by_condition_prereg %>% 
+  mutate(condition = recode(condition,
+                            immediate_translation = "Immediate-translation",
+                            one_language_at_a_time = "One-language-at-a-time")) %>%
+  ggplot(aes(y = mean_propAccuracy,  x = lang_comm, fill = condition, color = condition)) +
+  geom_bar(stat="identity", position=position_dodge(width=0.9), alpha = .25) + 
+  geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper), width=.2, position = position_dodge(.9), color = "#4d4d4d", alpha = 0.75) + 
+  geom_dotplot(data = individual_accuracy_prereg, aes(y = mean_propAccuracy, x = lang_comm, fill = condition), 
+               binaxis = 'y', stackdir = 'center', position = position_dodge(0.9), stackratio = 1, dotsize = 0.5, alpha = 0.8) +
+  scale_fill_manual(name = "Condition", values=c("#525252", "#bdbdbd"), drop = FALSE) +
+  scale_color_manual(name = "Condition", values=c("#525252", "#bdbdbd")) +
+  geom_hline(yintercept=0.5, linetype="dashed") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.1)) +
+  scale_x_discrete(labels = c("French–English \n (N = 22)", "Spanish–English \n (N = 14)")) +
+  theme_minimal() +
+  theme(panel.spacing.x = unit(2.5, "lines"),
+        text = element_text(size=20),
+        axis.text = element_text(size = 20, color = "black"),
+        legend.text = element_text(size = 20),
+        legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "\n Language community",
+       y = "Proportion of Accuracy",
+       fill = "Condition",
+       color = "Condition") +
+  #guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  #guides(fill = guide_legend(order = 2), color = guide_legend(order = 2)) +
+  theme(legend.box="vertical", legend.position = "bottom")
+
+plot_test_acc_with_individuals_prereg
+```
+
+### Exploratory Analysis
+#### Effect of age
+```{r include=FALSE, cache=TRUE}
+### glmer model
+prereg_test_acc_model_age <- data_clean_prereg %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # center & scale age in months
+  #mutate(age_in_years = scale(age_in_years, center = TRUE, scale = TRUE)) %>%
+  mutate(age_in_months = scale(age_in_months, center = TRUE, scale = TRUE)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  # keeping the maximal random effect here to do model comparison, will prune the random effect on the next step
+  glmer(accuracy ~ condition * lang_comm * age_in_months + (1+condition|subject_id) + (1|stimulus), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2), 
+        control=glmerControl(optimizer="bobyqa")) 
+
+as.data.frame(anova(prereg_test_acc_model, prereg_test_acc_model_age))
+
+prereg_test_acc_model_age_pruned <- data_clean_prereg %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # center & scale age in months
+  #mutate(age_in_years = scale(age_in_years, center = TRUE, scale = TRUE)) %>%
+  mutate(age_in_months = scale(age_in_months, center = TRUE, scale = TRUE)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  glmer(accuracy ~ condition * lang_comm * age_in_months + (1|subject_id) + (1|stimulus), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2)) 
+
+broom.mixed::tidy(prereg_test_acc_model_age_pruned) %>%
+  mutate_if(is.numeric, round, digits = 3) 
+
+# goodness of fit
+testUniformity(prereg_test_acc_model_age_pruned)
+testDispersion(prereg_test_acc_model_age_pruned) 
+plotQQunif(prereg_test_acc_model_age_pruned)
+```
+
+As an exploratory analysis, we also ran a logistic mixed-effects model with age as a fixed effect. Similar to the analysis on the sample reported in the main paper, model comparison with the model without age showed that adding age did not significantly improve the model ($\chi^2$(`r as.data.frame(anova(prereg_test_acc_model, prereg_test_acc_model_age))[2,7]`) = `r round(as.data.frame(anova(prereg_test_acc_model, prereg_test_acc_model_age))[2,6],3)`, $p$ = `r round(as.data.frame(anova(prereg_test_acc_model, prereg_test_acc_model_age))[2,8],3)`). Moreover, we had to prune the random slope for condition from the model since it would not converge, the final model specification was:
+
+accuracy ~ condition * lang_community * age_in_months + (1|participant) + (1|item)
+
+\noindent The coefficient estimates from this model are shown in Table S7 and Figure S4 visualizes this model. The model did not reveal a significant effect of age, but there was a significant three-way condition * language community * age interaction. This was due to the crossover interaction in the French–English bilingual children, where their performance significantly improved on the _immediate-translation_ condition with age. In contrast, the Spanish–English children showed similar performance in the two conditions and across age. 
+
+```{r results = "asis", cache = TRUE, warning=FALSE, message=FALSE}
+### Table S7
+prereg_test_acc_model_age_coefs <- summary(prereg_test_acc_model_age_pruned)$coef %>%
+  as.data.frame %>%
+  mutate_at(c("Estimate","Std. Error", "z value", "Pr(>|z|)"), 
+            function (x) signif(x, digits = 3)) %>% 
+  rename(SE = `Std. Error`, 
+         z = `z value`,
+         p = `Pr(>|z|)`) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(prereg_test_acc_model_age_coefs) <- c("Intercept", "condition", "lang_community", "age_in_months",
+                                               "condition * lang_community", "condition * age_in_months", "lang_community * age_in_months",
+                                               "condition * lang_community * age_in_months")
+
+papaja::apa_table(prereg_test_acc_model_age_coefs, 
+                  format.args = list(digits = 3),
+                  col.names =c("","Estimate", "$SE$","$z$","$p$"),
+                  align=c("l","c","c","c","c"),
+                  caption="Table S7. Coefficient estimates from the logistic mixed-effects models predicting accuracy in the the test phase with age_in_months as an additional fixed effect.",
+                  landscape = FALSE,
+                  placement = "H")
+```
+
+```{r FigureS4, fig.align='center', fig.height=8, fig.width=12, out.width='90%', fig.cap="Proportion of accuracy by condition, language community, and age in the test phase. Individual dots plot the data from each individual participant.", warning=FALSE, cache=TRUE}
+## ggplot with age
+plot_test_acc_with_age_prereg <- individual_accuracy_prereg %>% 
+  mutate(lang_comm = recode(lang_comm,
+                            "French-English" = "French–English \n (N = 22)",
+                            "Spanish-English" ="Spanish–English \n (N = 14)")) %>%
+  ggplot(aes(y = mean_propAccuracy, x = age_in_months, fill = condition, color = condition)) +
+  geom_smooth(method="glm", se = F, size = 2) + 
+  facet_grid(. ~ lang_comm) +
+  geom_point(alpha = 0.5, size = 3) +
+  scale_fill_manual(name = "Condition", values=c("#525252", "#bdbdbd"), drop = FALSE) +
+  scale_color_manual(name = "Condition", values=c("#525252", "#bdbdbd")) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.1)) +
+  theme_minimal() +
+  theme(panel.spacing.x = unit(2.5, "lines"),
+        text = element_text(size=20),
+        axis.text = element_text(size = 20, color = "black"),
+        legend.text = element_text(size = 20),
+        legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "\n Age (months)",
+       y = "Proportion of Accuracy",
+       fill = "Condition",
+       color = "Condition") +
+  guides(fill = guide_legend(order = 2), color = guide_legend(order = 2)) +
+  theme(legend.box="vertical", legend.position = "bottom")
+
+#ggsave("output_supplementary/plot_test_acc_with_age.png", plot_test_acc_with_age, width = 12, height = 8)
+
+plot_test_acc_with_age_prereg
+```
+
+#### Response time
+```{r include=FALSE, cache=TRUE}
+### number of trials in this analysis (keeping only trials with correct response)
+test_rt_trialN_prereg <- data_clean_prereg %>%
+  # keep only novel test
+  filter(test_part == "nov_test") %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # filter and keep only trials where a correct response is made
+  filter(accuracy == 1) %>%
+  count()
+
+### Descripctive stats
+mean_rt_by_condition_prereg <- data_clean_prereg %>%
+  # filter and keep only trials which were correctly-responded
+  filter(accuracy == 1) %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  group_by(lang_comm, subject_id, condition) %>% 
+  summarize(rt = mean(rt, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(lang_comm, condition) %>%
+  summarize(n_subj = n_distinct(subject_id),
+            mean_rt = mean(rt, na.rm = T),
+            sd_rt= sd(rt, na.rm = T),
+            min_rt = min(rt, na.rm = T),
+            max_rt = max(rt, na.rm = T),
+            se = sd_rt / sqrt(n()),
+            CI_lower = mean_rt - (1.96 * se),
+            CI_upper = mean_rt + (1.96 * se)) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+```
+
+We also included response time on each correctly-responded test trial as a dependent variable. There were a total of `r test_rt_trialN_prereg` trials in this analysis. On average, French–English bilingual children had a mean response time of `r round(mean_rt_by_condition_prereg[2,4])`ms in the _immediate-translation_ condition ($SD$ = `r round(mean_rt_by_condition_prereg[2,5],2)`; range = `r round(mean_rt_by_condition_prereg[2,6],2)` – `r round(mean_rt_by_condition_prereg[2,7],2)`) and `r round(mean_rt_by_condition_prereg[3,4])`ms in the _one-language-at-a-time_ condition ($SD$ = `r round(mean_rt_by_condition_prereg[3,5],2)`; range = `r round(mean_rt_by_condition_prereg[3,6],2)` – `r round(mean_rt_by_condition_prereg[3,7],2)`). On the other hand, Spanish–English bilingual children had a mean response time of `r round(mean_rt_by_condition_prereg[5,4])`ms in the _immediate-translation_ condition ($SD$ = `r round(mean_rt_by_condition_prereg[5,5],2)`; range = `r round(mean_rt_by_condition_prereg[5,6],2)` – `r round(mean_rt_by_condition_prereg[5,7],2)`) and `r round(mean_rt_by_condition_prereg[6,4])`ms in the _one-language-at-a-time_ condition ($SD$ = `r round(mean_rt_by_condition_prereg[6,5],2)`; range = `r round(mean_rt_by_condition_prereg[6,6],2)` – `r round(mean_rt_by_condition_prereg[6,7],2)`). 
+
+```{r include=FALSE, cache=TRUE}
+### lmer model
+prereg_test_rt_model_with_age <- data_clean_prereg %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # filter and keep only trials where a correct response is made
+  filter(accuracy == 1) %>%
+  # center & scale age in months
+  #mutate(age_in_years = scale(age_in_years, center = TRUE, scale = TRUE)) %>%
+  mutate(age_in_months = scale(age_in_months, center = TRUE, scale = TRUE)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # log-transform rt
+  mutate(log_rt = log(rt),
+         condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  lmer(log_rt ~ condition * lang_comm * age_in_months + (1 + condition|subject_id) + (1|stimulus), data = .,
+       contrasts = list(condition = contr.sum(2)/-2,
+                        lang_comm = contr.sum(2)/-2))
+
+broom.mixed::tidy(prereg_test_rt_model_with_age) %>%
+  mutate_if(is.numeric, round, digits = 3) 
+
+# goodness of fit
+testUniformity(prereg_test_rt_model_with_age)
+testDispersion(prereg_test_rt_model_with_age) 
+plotQQunif(prereg_test_rt_model_with_age)
+```
+
+We ran a linear mixed-effects model with condition, language community, age, as well as their interactions, entered as fixed effects. A random slope of condition by participants and random intercepts of item were also entered. To correct issues of non-normality in response time, raw response time was log-transformed. The final model specification was:
+
+log_rt ~ condition * lang_community * age_in_months + (1+ condition|participant) + (1|item)
+
+\noindent The coefficient estimates from this model are shown in Table S8 and Figure S5 visualizes this model. Overall, visualization of the model suggests that, across both conditions and language communities, older children generally responded faster than younger children. However, the model did not reveal any significant effects or interactions of condition, language community, or age. Therefore, consistent to the patterns reported for the sample included in the main paper, in terms of response time, bilingual children in both communities performed similarly in word learning across both the _immediate-translation_ and _one-language-at-a-time_ conditions.
+
+```{r results = "asis", cache = TRUE, warning=FALSE, message=FALSE}
+### Table S8
+prereg_test_rt_model_with_age_coefs <- summary(prereg_test_rt_model_with_age)$coef %>%
+  as.data.frame %>%
+  select(-df)%>%
+  mutate_at(c("Estimate","Std. Error", "t value", "Pr(>|t|)"), 
+            function (x) signif(x, digits = 3)) %>% 
+  rename(SE = `Std. Error`, 
+         t = `t value`,
+         p = `Pr(>|t|)`) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(prereg_test_rt_model_with_age_coefs) <- c("Intercept", "condition", "lang_community", "age_in_months",
+                                        "condition * lang_community", "condition * age_in_months", "lang_community * age_in_months",
+                                        "condition * lang_community * age_in_months")
+
+papaja::apa_table(prereg_test_rt_model_with_age_coefs, 
+                  format.args = list(digits = 3),
+                  col.names =c("","Estimate", "$SE$","$t$","$p$"),
+                  align=c("l","c","c","c","c"),
+                  caption="Table S8. Coefficient estimates from the linear mixed-effects model predicting log-transformed response time in the test phase.",
+                  landscape = FALSE,
+                  placement = "H")
+```
+
+```{r FigureS5, fig.align='center', fig.height=8, fig.width=12, out.width='90%', fig.cap="Response time by condition, language community, and age in the test phase. Individual dots plot the data from each individual participant.", warning=FALSE, cache=TRUE}
+
+### Plotting rt with individual points
+#### rt per individual participant
+individual_rt_prereg <- data_clean_prereg %>%
+  # exclude trials where no response was made
+  filter(!is.na(rt)) %>%
+  # keep only novel test
+  filter(test_part == "nov_test") %>%
+  group_by(test_order, lang_comm, subject_id, age_in_years, age_in_months, condition) %>%
+  summarize(mean_rt = mean(rt, na.rm=T)) %>%
+  pivot_wider(names_from = "condition", values_from = "mean_rt") %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+
+
+#### ggplot with age
+plot_test_rt_with_age_prereg <- individual_rt_prereg %>% 
+  pivot_longer(c(immediate_translation, one_language_at_a_time), names_to = "condition", values_to = "mean_rt") %>%
+  mutate(condition = recode(condition,
+                            immediate_translation = "Immediate-translation",
+                            one_language_at_a_time = "One-language-at-a-time")) %>%
+  mutate(lang_comm = recode(lang_comm,
+                            "French-English" = "French–English \n (N = 22)",
+                            "Spanish-English" ="Spanish–English \n (N = 14)")) %>%
+  ggplot(aes(y = mean_rt, x = age_in_months, fill = condition, color = condition)) +
+  geom_smooth(method="lm", se = F, size = 2) + 
+  facet_grid(. ~ lang_comm) +
+  geom_point(alpha = 0.5, size = 3) +
+  scale_fill_manual(name = "Condition", values=c("#525252", "#bdbdbd"), drop = FALSE) +
+  scale_color_manual(name = "Condition", values=c("#525252", "#bdbdbd")) +
+  theme_minimal() +
+  theme(panel.spacing.x = unit(2.5, "lines"),
+        text = element_text(size=20),
+        axis.text = element_text(size = 20, color = "black"),
+        legend.text = element_text(size = 20),
+        legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "\n Age (months)",
+       y = "Response time (ms)",
+       fill = "Condition",
+       color = "Condition") +
+  guides(fill = guide_legend(order = 2), color = guide_legend(order = 2)) +
+  theme(legend.box="vertical", legend.position = "bottom")
+
+#ggsave("output_supplementary/plot_test_rt_with_age.png", plot_test_rt_with_age, width = 12, height = 8)
+
+plot_test_rt_with_age_prereg
+```
+
+#### Language proficiency in all participants
+```{r include=FALSE, cache=TRUE}
+# ---------- create data to include all participants ----------
+data_clean_all <- read.csv(here("analysis/data_clean.csv")) %>%
+  # exclude participant with incomplete data
+  filter(exclude_incomplete != 1) %>% ## this excludes 1 participant 
+  # exclude preterm
+  filter(exclude_preterm != 1 | is.na(exclude_preterm)) %>% ## this excludes n = 4
+  # exclude speech/language problem
+  filter(exclude_language_problem != 1) %>% ## thid excludes n = 0, as the participant has been eliminated in the previous command
+  # exclude parent-reported technical difficulty
+  filter(exclude_parent != 1) %>% ## this excludes n = 1
+  # remove subject_id whose proficiency info are missing (n=4)
+  filter(missing_LEQ != 1) 
+
+## number of participants
+data_clean_all %>% group_by(lang_comm) %>% distinct(subject_id) %>% count()
+
+# ---------- proficiency ----------
+## overall mean
+mean_proficiency_all <- data_clean_all %>%
+  distinct(subject_id, .keep_all = T) %>%
+  select(subject_id, lang_comm, matches("comprehension_proficiency"), matches("global_")) %>%
+  mutate(comprehension_proficiency_other = 
+           case_when(lang_comm == "French-English" ~ comprehension_proficiency_fr,
+                     lang_comm == "Spanish-English" ~ comprehension_proficiency_sp,
+                     TRUE ~ NA_integer_)) %>%
+  select(-c(comprehension_proficiency_fr, comprehension_proficiency_sp)) %>%
+  pivot_longer(c(matches("comprehension_proficiency")), names_to = "language", values_to = "proficiency") %>%
+  group_by(lang_comm) %>%
+  dplyr::summarize(n = length(unique(subject_id)),
+                   mean_proficiency = mean(proficiency, na.rm = T),
+                   sd_proficiency = sd(proficiency, na.rm = T),
+                   min_proficiency = min(proficiency, na.rm = T),
+                   max_proficiency = max(proficiency, na.rm = T)) %>%
+  mutate(across(is.numeric, ~ round(., 2)))
+```
+
+For a more inclusive analysis on the effect of proficiency, this analysis also included data from children who were previously eliminated for not fulfilling the language criteria — either the criteria reported in the main paper or the more stringent criteria reported in this document. In total, there were `r data_clean_all %>% filter(lang_comm == "French-English") %>% distinct(subject_id) %>% nrow()` French–English children and `r data_clean_all %>% filter(lang_comm == "Spanish-English") %>% distinct(subject_id) %>% nrow()` Spanish–English children who were born full term and without any reported language problems or participated without any problem. Among this group of children, the French–English children had a mean proficiency score of `r mean_proficiency_all[1,3]` ($SD$ = `r mean_proficiency_all[1,4]`, range = `r mean_proficiency_all[1,5]` – `r mean_proficiency_all[1,6]`) and the Spanish–English children had a mean proficiency score of `r mean_proficiency_all[2,3]` ($SD$ = `r mean_proficiency_all[2,4]`, range = `r mean_proficiency_all[2,5]` – `r mean_proficiency_all[2,6]`). To explore the effect of proficiency, we added a variable of proficiency score to the logistic mixed-effects model. The initial model specification was:
+
+```{r include=FALSE, cache=TRUE}
+### glmer model
+all_test_acc_model_with_proficiency_withlangcomm <- data_clean_all %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # create a comprehension variable for the tested language
+  mutate(language_proficiency = case_when(
+    language == "english" ~ as.numeric(comprehension_proficiency_eng),
+    language == "french" ~ as.numeric(comprehension_proficiency_fr),
+    language == "spanish" ~ as.numeric(comprehension_proficiency_sp),
+    TRUE ~ NA_real_)) %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1+ condition|subject_id) + (1|stimulus), family = binomial, data = .)
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1|subject_id) + (1|stimulus), family = binomial, data = .)
+  glmer(accuracy ~ condition * lang_comm * language_proficiency + (1|subject_id), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2,
+                         lang_comm = contr.sum(2)/-2))
+
+all_test_acc_model_with_proficiency <- data_clean_all %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # create a comprehension variable for the tested language
+  mutate(language_proficiency = case_when(
+    language == "english" ~ as.numeric(comprehension_proficiency_eng),
+    language == "french" ~ as.numeric(comprehension_proficiency_fr),
+    language == "spanish" ~ as.numeric(comprehension_proficiency_sp),
+    TRUE ~ NA_real_)) %>%
+  mutate(condition = as.factor(condition),
+         lang_comm = as.factor(lang_comm)) %>%
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1+ condition|subject_id) + (1|stimulus), family = binomial, data = .)
+  #glmer(accuracy ~ condition * lang_comm * language_proficiency + (1|subject_id) + (1|stimulus), family = binomial, data = .)
+  glmer(accuracy ~ condition * language_proficiency + (1|subject_id), family = binomial, data = .,
+        contrasts = list(condition = contr.sum(2)/-2))
+
+anova(all_test_acc_model_with_proficiency, all_test_acc_model_with_proficiency_withlangcomm)
+
+broom.mixed::tidy(all_test_acc_model_with_proficiency) %>%
+  mutate_if(is.numeric, round, digits = 3) 
+```
+
+accuracy ~ condition * lang_community * proficiency + (1+ condition|participant) + (1|item)
+
+However, as the initial model could not converge, we removed the random slope for condition and the random intercept for stimulus item. Moreover, since we did not find any significant difference between the two communities in the main accuracy analysis, we further pruned the effect of language community from the model. Note that model comparison between the model with language community and the one without also indicated no significant improvement in model fit, $\chi^2$(`r as.data.frame(anova(all_test_acc_model_with_proficiency, all_test_acc_model_with_proficiency_withlangcomm))[2,7]`) = `r round(as.data.frame(anova(all_test_acc_model_with_proficiency, all_test_acc_model_with_proficiency_withlangcomm))[2,6], 3)`, *p* = `r round(as.data.frame(anova(all_test_acc_model_with_proficiency, all_test_acc_model_with_proficiency_withlangcomm))[2,8], 3)`. Therefore, the final model was:
+
+accuracy ~ condition * proficiency + (1|participant)
+
+The coefficient estimates from this model are shown in Table S9 and Figure S6 visualizes this model. The model revealed a significant effect of proficiency, suggesting that bilingual children were overall more accurate for trials in which they had a higher level of language proficiency in the trial language. In contrast to the patterns reported for the sample included in the main paper, this model here revealed that the effect of proficiency may be more evident when a wider range of language proficiency level was included in the analysis. In other words, the sample reported in the main paper could have possibly focused on children who were relatively proficient. Yet, the lack of a significant interaction points to the possibility that proficiency level did not affect children’s accuracy in learning words under different language-switching patterns.
+
+```{r results = "asis", cache = TRUE, warning=FALSE, message=FALSE}
+### Table S9
+all_test_acc_model_with_proficiency_coefs <- summary(all_test_acc_model_with_proficiency)$coef %>%
+  as.data.frame %>%
+  mutate_at(c("Estimate","Std. Error", "z value", "Pr(>|z|)"), 
+            function (x) signif(x, digits = 3)) %>% 
+  rename(SE = `Std. Error`, 
+         t = `z value`,
+         p = `Pr(>|z|)`) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(p = case_when(
+    p < .001 ~ "<.001",
+    p < .01 ~ "<.01",
+    p < .05 ~ "<.05",
+    TRUE ~ as.character(p)))
+
+rownames(all_test_acc_model_with_proficiency_coefs) <- c("Intercept", "condition", "proficiency", "condition * proficiency")
+
+papaja::apa_table(all_test_acc_model_with_proficiency_coefs, 
+                  format.args = list(digits = 3),
+                  col.names =c("","Estimate", "$SE$","$z$","$p$"),
+                  align=c("l","c","c","c","c"),
+                  caption="Table S9. Coefficient estimates from the logistic mixed-effects model predicting accuracy in the test phase with proficiency scores among all the children.",
+                  landscape = FALSE,
+                  placement = "H")
+```
+
+```{r FigureS6, fig.align='center', fig.height=8, fig.width=8, out.width='50%', fig.cap="Proportion of accuracy of all children by condition and proficiency in the test blocks. Individual dots plots the data from each individual participant.", warning=FALSE, cache=TRUE}
+
+all_test_acc_proficiency_plot <- data_clean_all %>%
+  # filter trials without any response 
+  filter(rt < 10000 | !is.na(rt)) %>%
+  # keep only familiar test and novel test
+  filter(test_part == "nov_test") %>%
+  # remove subject_id whose proficiency info are missing (n=4)
+  filter(missing_LEQ != 1) %>%
+  # create a comprehension variable for the tested language
+  mutate(language_proficiency = case_when(
+    language == "english" ~ as.numeric(comprehension_proficiency_eng),
+    language == "french" ~ as.numeric(comprehension_proficiency_fr),
+    language == "spanish" ~ as.numeric(comprehension_proficiency_sp),
+    TRUE ~ NA_real_)) %>%
+  # summarize
+  group_by(subject_id, condition, language) %>%
+  mutate(prop_accuracy = sum(accuracy, na.rm = T)/length(subject_id)) %>%
+  distinct(subject_id, .keep_all = TRUE) %>%
+  ungroup() %>%
+  mutate(condition = recode(condition,
+                            immediate_translation = "Immediate-translation",
+                            one_language_at_a_time = "One-language-at-a-time")) %>%
+  ggplot(aes(y = prop_accuracy, x = language_proficiency, fill = condition, color = condition)) +
+  geom_smooth(method="glm", se = F, size = 2) + 
+  geom_point(alpha = 0.5, size = 3, position = position_jitter(w = 0.1, h = 0.1)) +
+  scale_x_continuous(limits = c(1, 10),
+                     breaks = seq(0, 10, by = 1)) +
+  theme_minimal() +
+  scale_fill_manual(name = "Condition", values=c("#525252", "#bdbdbd", "#525252", "#bdbdbd")) +
+  scale_color_manual(name = "Condition", values=c("#525252", "#bdbdbd", "#525252", "#bdbdbd")) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.1)) +
+  theme(panel.spacing.x = unit(2.5, "lines"),
+        text = element_text(size=20),
+        axis.text = element_text(size = 20, color = "black"),
+        legend.text = element_text(size = 20),
+        legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "\n Proficiency",
+       y = "Proportion of Accuracy",
+       fill = "Condition",
+       color = "Condition") 
+
+all_test_acc_proficiency_plot
+```
