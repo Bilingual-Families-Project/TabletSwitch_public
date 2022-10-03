@@ -25,19 +25,26 @@ Demo of the experiment testing English-French word-learning performance in the _
 
 (Note that your browser window will go to fullscreen. Click Esc if you would like to leave fullscreen mode).
 
-### experiment_orders
-Repository for the four different test orders (4 orders per site, so there are 8 versions in total).
-* Pseudo-randomization list
-* English_French
-  - en_ol: _"English first, one-language-at-a-time first"_ condition
-  - en_it: _"English first, immediate-translation first"_ condition
-  - fr_ol: _"French first, one-language-at-a-time first"_ condition
-  - fr_it: _"French first, immediate-translation first"_ condition
-* English_Spanish
-  - en_ol: _"English first, one-language-at-a-time first"_ condition
-  - en_it: _"English first, immediate-translation first"_ condition
-  - fr_ol: _"Spanish first, one-language-at-a-time first"_ condition
-  - fr_it: _"Spanish first, immediate-translation first"_ condition
+### experiment_program
+This folder holds the programs created for the experiment. There are four different test orders (4 orders per site, so there are 8 versions in total). Each individual subfolder contains the jsPsych script that generates the program.
+
+#### `English_French`
+
+* `en_ol`: _"English first, one-language-at-a-time first"_ condition
+* `en_it`: _"English first, immediate-translation first"_ condition
+* `fr_ol`: _"French first, one-language-at-a-time first"_ condition
+* `fr_it`: _"French first, immediate-translation first"_ condition
+  
+#### `English_Spanish`
+
+* `en_ol`: _"English first, one-language-at-a-time first"_ condition
+* `en_it`: _"English first, immediate-translation first"_ condition
+* `fr_ol`: _"Spanish first, one-language-at-a-time first"_ condition
+* `fr_it`: _"Spanish first, immediate-translation first"_ condition
+
+#### `4TestOrders_PseudoRandom_ObjectsPositions.xlsx`
+The pseudo-randomization list
+
 
 ### praat_script
 Repository containing the **manual** and **praat scripts** used to generate the audio stimuli for the experiment.
@@ -56,8 +63,8 @@ between sentences).
 
 ### stimuli_audio
 Repository containing the audio stimuli used in the experiment.
-* English_French: The audio stimuli used in the English-French versions.
-* English_Spanish: The audio stimuli used in the English-Spanish versions. 
+* `English_French`: The audio stimuli used in the English-French versions.
+* `English_Spanish`: The audio stimuli used in the English-Spanish versions. 
 
 ### stimuli_image
 Repository containing all the visual stimuli used in the experiment.
