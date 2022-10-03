@@ -41,6 +41,18 @@ Repository for the four different test orders (4 orders per site, so there are 8
 
 ### praat_script
 Repository containing the **manual** and **praat scripts** used to generate the audio stimuli for the experiment.
+* `0.ExtractDurationInfo_v0.1.praat`: This script extracts duration information from the sound files.
+* `1.ConvertStereoToMono.praat`: This script converts all sound files to mono signal.
+* `2.OverrideSamplingFreq_44100Hz.praat`: This script converts the sampling frequency of all sound files to 44100Hz.
+* `3.SegmentFiles_v0.2.praat`: This script segments the sound files
+and gives us an individual .wav file for each recorded sentence.
+* `5.NormalizeIntensity_v0.1.praat`: This script normalizes the intensity of all the sound files to 65dB.
+* `6.zero-crossing.praat`: This script adjusts the beginning and end of all sound files to the nearest zero-crossings.
+* `7.CreateStimuli_with500msPause_v0.1.praat`: This script creates the novel learning audio stimuli (with a 500ms pause in
+between sentences).
+* `8.AddSilence_ToBeginning_v0.1.praat`: This script adds silence to the beginning of each audio stimulus.
+* `manual_creating the stimuli using Praat scripts.pdf`: This manual explains the procedure of how to run the praat scripts to create the stimuli for the experiment.
+
 
 ### stimuli_audio
 Repository containing the audio stimuli used in the experiment.
