@@ -1,0 +1,264 @@
+---
+title: "Data dictionary: Patterns of language switching and bilingual childrens word learning: An experiment across two communities"
+author: "Rachel K.Y. Tsui, Jessica E. Kosie, Laia Fibla, Casey Lew-Williams, & Krista Byers-Heinlein"
+date: '`r format(Sys.time(), "%a %b %d %X %Y")`'
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    code_folding: 'hide'
+    self_contained: true
+  pdf_document:
+    toc: yes
+    toc_depth: 4
+    latex_engine: xelatex
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(
+  warning = TRUE, # show warnings during codebook generation
+  message = TRUE, # show messages during codebook generation
+  error = TRUE, # do not interrupt codebook generation in case of errors,
+                # usually better for debugging
+  echo = TRUE  # show R code
+)
+ggplot2::theme_set(ggplot2::theme_bw())
+pander::panderOptions("table.split.table", Inf)
+```
+
+```{r library, message=FALSE, warning=FALSE}
+# load libraries
+library(codebook)
+library(here)
+library(dplyr)
+library(tidyverse)
+library(future)
+library(labelled)
+```
+
+This is a data dictionary for the data set used in the paper "Patterns of language switching and bilingual childrens word learning: An experiment across two communities".
+
+```{r message=FALSE, warning=FALSE}
+#load dataset
+data_clean <- read.csv(here("analysis/data_clean.csv"))
+
+```
+
+# **Variable overview**
+```{r}
+codebook_items(data_clean)
+```
+
+# **Subject information**
+* *subject_id*: Unique participant ID
+* *lang_comm*: The bilingual language community to which the participant belongs; 2 levels: French-English & Spanish-English
+* *gender*: 2 levels: Female & Male
+* *age_in_years*: Participant's age in years
+* *age_in_months*: Participant's age in months
+* *parent_edu_level*: Highest education level of participant's parent
+* *global_exposure_eng*: Parent-reported global exposure to English (out of 100%)
+* *global_exposure_fr*: Parent-reported global exposure to French (out of 100%)
+* *global_exposure_sp*: Parent-reported global exposure to Spanish (out of 100%)
+* *global_exposure_other*: Parent-reported global exposure to another language (out of 100%)
+* *comprehension_proficiency_eng*: Parent-reported English comprehension proficiency score (out of 10)
+* *comprehension_proficiency_fr*: Parent-reported French comprehension proficiency score (out of 10)
+* *comprehension_proficiency_sp*: Parent-reported Spanish comprehension proficiency score (out of 10)
+
+### Number of participants
+This dataset included `r data_clean %>% filter(lang_comm == "French-English") %>% distinct(subject_id) %>% nrow()` French-English bilingual children (`r data_clean %>% filter(gender == "Female" & lang_comm == "French-English") %>% distinct(subject_id) %>% nrow()` girls) and `r data_clean %>% filter(lang_comm == "Spanish-English") %>% distinct(subject_id) %>% nrow()` Spanish-English bilingual children (`r data_clean %>% filter(gender == "Female" & lang_comm == "Spanish-English") %>% distinct(subject_id) %>% nrow()`) who participated in our experiment. 
+
+### Mean age (in months) of participant
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm) %>%
+  summarize(mean_age_in_months = mean(age_in_months, na.rm = T),
+            sd = sd(age_in_months, na.rm = T),
+            min = min(age_in_months, na.rm = T),
+            max = max(age_in_months, na.rm = T))
+```
+
+### Distribution of parents' education level
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  select(subject_id, lang_comm, parent_edu_level) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm) %>%
+  mutate(total_n = length(subject_id)) %>%
+  select(lang_comm, parent_edu_level, total_n) %>%
+  group_by(lang_comm, parent_edu_level) %>%
+  mutate(n = length(parent_edu_level),
+         percent = round(n/total_n*100)) %>%
+  distinct(parent_edu_level, .keep_all = T)
+
+```
+
+### Mean proficiency
+```{r message=FALSE, warning=FALSE}
+individual_exposure <- data_clean %>%
+  select(subject_id, lang_comm, matches("exposure")) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  mutate(global_exposure_fr_sp = case_when(lang_comm == "French-English" ~ as.numeric(global_exposure_fr),
+                                           lang_comm == "Spanish-English" ~ as.numeric(global_exposure_sp),
+                                           TRUE ~ NA_real_)) %>%
+  select(subject_id, lang_comm, global_exposure_eng, global_exposure_fr_sp) %>%
+  pivot_longer(-c(subject_id, lang_comm), names_to = "language", values_to = "exposure") %>%
+  mutate(language = recode(language, "global_exposure_eng" = "English", "global_exposure_fr_sp" = "French/Spanish"))
+
+data_clean %>%
+  select(subject_id, lang_comm, matches("exposure")) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  mutate(global_exposure_fr_sp = case_when(lang_comm == "French-English" ~ as.numeric(global_exposure_fr),
+                                           lang_comm == "Spanish-English" ~ as.numeric(global_exposure_sp),
+                                           TRUE ~ NA_real_)) %>%
+  select(subject_id, lang_comm, global_exposure_eng, global_exposure_fr_sp) %>%
+  pivot_longer(-c(subject_id, lang_comm), names_to = "language", values_to = "exposure") %>%
+  mutate(language = recode(language, "global_exposure_eng" = "English", "global_exposure_fr_sp" = "French/Spanish")) %>%
+  group_by(lang_comm, language) %>%
+  summarize(mean_exposure = mean(exposure, na.rm = T),
+            sd_exposure = sd(exposure, na.rm = T),
+            min_exposure = min(exposure, na.rm = T),
+            max_exposure = max(exposure, na.rm = T),
+            se = sd_exposure / sqrt(n()),
+            CI_lower = mean_exposure - (1.96 * se),
+            CI_upper = mean_exposure + (1.96 * se)) %>%
+  rename(exposure = mean_exposure) %>%
+  ggplot(aes(x = lang_comm, y = exposure, fill = language, color = language)) +
+  geom_bar(stat="identity", position=position_dodge(width=0.9), alpha = .25) +
+  geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper), width=.2, position = position_dodge(.9), color = "#4d4d4d", alpha = 0.75) +
+  geom_dotplot(data = individual_exposure, aes(y = exposure, x = lang_comm, fill = language, color = language), 
+               binaxis = 'y', stackdir = 'center', position = position_dodge(0.9), stackratio = 1, dotsize = 0.5, alpha = 0.8) +
+  coord_flip()
+  
+```
+
+# **Exclusion criteria**
+* *missing_LEQ*: 1 vs. 0; 1 = participant missing language comprehension proficiency data
+
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  filter(missing_LEQ == 1) %>%
+  distinct(subject_id) %>%
+  nrow()
+```
+
+* *exclude_preterm*: 1 vs. 0; 1 = preterm
+
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  filter(exclude_preterm == 1) %>%
+  distinct(subject_id) %>%
+  nrow()
+```
+
+* *exclude_language_problem*: 1 vs. 0; 1 = parent-reported language or speech development problem
+
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  filter(exclude_language_problem == 1) %>%
+  distinct(subject_id) %>%
+  nrow()
+```
+
+* *exclude_incomplete*: 1 vs. 0; 1 = incomplete data
+
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  filter(exclude_incomplete == 1) %>%
+  distinct(subject_id) %>%
+  nrow()
+```
+
+* *exclude_parent*: 1 vs. 0; 1 = parent-reported technical problems during the experiment
+
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  filter(exclude_parent == 1) %>%
+  distinct(subject_id) %>%
+  nrow()
+```
+
+Note that those paritcipants being flagged as 1 were excluded from the final analysis.
+
+# **Experimental variables**
+
+* *test_order*: Which of the 8 orders did the participant complete
+  + English first, immediate-translation first (then French / then Spanish)
+  + English first, one-language-at-a-time first (then French / then Spanish)
+  + French first, immediate-translation first
+  + French first, one-language-at-a-time first
+  + Spanish first, immediate-translation first
+  + Spanish first, one-language-at-a-time first
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  distinct(test_order)
+```
+
+* *block*: 3 levels; familiar vs. block1 vs. block2
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  distinct(block)
+```
+
+* *test_part*: 3 levels; fam_test vs. nov_learn vs. nov_test
+  + fam_test refers to the familiar word test trials
+  + nov_learn refers to the novel word learning trials
+  + nov_test refers to the novel word test trials
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  distinct(test_part)
+```
+
+* *language*: Which language the trial was in
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  group_by(test_part) %>%
+  distinct(language) %>%
+  arrange(test_part)
+```
+
+* *condition*: Which condition the trial was in
+  + 3 levels; familiar vs. immediate_translation vs. one_language_at_a_time
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  distinct(condition)
+```
+
+* *trial_index*: Trial number
+* *stimulus*: Which stimulus was played in the trial
+* *button_correct*: The correct response for the trial
+* *button_selected*: Which response did the participant selected
+* *rt*: The response time for the trial
+* *accuracy*: If button_correct = button_selected (i.e., the participant selected the correct response), then a score of 1 was given to the trial; if not, a score of 0 was given. If no response was made, then NA was assigned.
+
+### Number of participants per test order 
+```{r message=FALSE, warning=FALSE}
+data_clean %>%
+  select(subject_id, lang_comm, test_order) %>%
+  distinct(subject_id, .keep_all = T) %>%
+  group_by(lang_comm) %>%
+  count(test_order) %>%
+  ggplot(aes(x = lang_comm, y = n, fill = test_order)) +
+  geom_bar(stat="identity", position=position_dodge(width=0.9)) +
+  scale_y_continuous(limits = c(0, 10), breaks = seq(0, 10, by = 1))
+```
+
+### Number of trials per participants
+```{r message=FALSE, warning=FALSE, fig.height=50, fig.width=20}
+level_order <- c("familiar", "block1", "block2")
+
+data_clean %>%
+  group_by(subject_id, block) %>%
+  filter(test_part == "fam_test" | test_part == "nov_test") %>%
+  count() %>%
+  ggplot(aes(x = subject_id, y = n, fill = factor(block, level = level_order))) +
+  geom_bar(stat="identity", position=position_dodge(width=0.9)) +
+  scale_y_continuous(limits = c(0, 12), breaks = seq(0, 12, by = 1)) +
+  facet_grid(factor(block, level = level_order) ~ .) +
+  coord_flip() +
+  theme(text = element_text(size=12),
+        axis.text = element_text(size = 12, color = "black"),
+        legend.text = element_text(size = 12),
+        legend.position="bottom")
+```
