@@ -19,11 +19,21 @@ Current files include:
 ### analysis
 
 ### experiment_demo
-Demo of the experiment testing English-French word-learning performance in the _"English first, one-language-at-a-time first"_ condition.
+This folder contains video demostration of the experiment testing English-French word-learning performance in the _"English first, one-language-at-a-time first"_ condition.
 
-[Click here to view the demo](https://rachelkytsui.github.io/demo_Bilingual-Families-Project_TabletSwitch/) 
+[Click here to view the online demo](https://rachelkytsui.github.io/demo_Bilingual-Families-Project_TabletSwitch/) 
 
 (Note that your browser window will go to fullscreen. Click Esc if you would like to leave fullscreen mode).
+
+#### `demo_prgram`
+This subfolder holds the demo experiment program, which contains the stimuli as well as jsPsych script to run the prgram.
+
+#### `demo_videos`
+
+* `TabletSwitch_demo_full_en_ol.mp4`: This video demonstrates the entire procedure of the experiment.
+* `TabletSwitch_demo_immediate-translation.mp4`: This video shows only the procedure of the *immediate-translation* condition.
+* `TabletSwitch_demo_one-language-at-a-time.mp4`: This video shows only the procedure of the *one-language-at-a-time* condition.
+
 
 ### experiment_program
 This folder holds the programs created for the experiment. There are four different test orders (4 orders per site, so there are 8 versions in total). Each individual subfolder contains the jsPsych script that generates the program.
